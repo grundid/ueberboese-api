@@ -68,21 +68,7 @@ public class UeberboeseController implements DefaultApi {
     SourceProviderApiDto provider = new SourceProviderApiDto();
     provider.setId(id);
     provider.setCreatedOn(java.time.OffsetDateTime.parse(createdOn));
-
-    // Handle the special case for "OFF" which was incorrectly mapped to "FALSE" in the generated enum
-    if ("OFF".equals(name)) {
-      provider.setName(SourceProviderApiDto.NameEnum.FALSE);
-    } else {
-      // Try to find the matching enum value
-      try {
-        SourceProviderApiDto.NameEnum nameEnum = SourceProviderApiDto.NameEnum.fromValue(name);
-        provider.setName(nameEnum);
-      } catch (IllegalArgumentException e) {
-        // Handle special cases that might not be in the enum
-        throw new RuntimeException("Unknown source provider name: " + name, e);
-      }
-    }
-
+    provider.setName(name);
     provider.setUpdatedOn(java.time.OffsetDateTime.parse(updatedOn));
     return provider;
   }

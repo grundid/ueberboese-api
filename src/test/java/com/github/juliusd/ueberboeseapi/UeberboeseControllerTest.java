@@ -41,7 +41,7 @@ class UeberboeseControllerTest {
             <sourceprovider>
               <id>3</id>
               <createdOn>1350921780.000000000</createdOn>
-              <name>false</name>
+              <name>OFF</name>
               <updatedOn>1350921780.000000000</updatedOn>
             </sourceprovider>
             <sourceprovider>
