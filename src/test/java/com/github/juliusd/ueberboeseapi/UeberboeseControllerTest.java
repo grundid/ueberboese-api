@@ -260,7 +260,6 @@ class UeberboeseControllerTest {
 
     given()
         .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
-        .header("Content-type", "application/vnd.bose.streaming-v1.2+xml")
         .header("User-agent", "Bose_Lisa/27.0.6")
     .when()
         .get("/streaming/sourceproviders")

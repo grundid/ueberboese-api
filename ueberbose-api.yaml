@@ -11,29 +11,6 @@ paths:
       operationId: getSourceProviders
       security:
         - BearerAuth: []
-      parameters:
-        - name: Accept
-          in: header
-          required: true
-          schema:
-            type: string
-            enum:
-              - application/vnd.bose.streaming-v1.2+xml
-          example: application/vnd.bose.streaming-v1.2+xml
-        - name: Content-type
-          in: header
-          required: true
-          schema:
-            type: string
-            enum:
-              - application/vnd.bose.streaming-v1.2+xml
-          example: application/vnd.bose.streaming-v1.2+xml
-        - name: User-agent
-          in: header
-          required: false
-          schema:
-            type: string
-          example: Bose_Lisa/27.0.6
       responses:
         '200':
           description: Successful response with list of source providers

@@ -10,8 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UeberboeseController implements DefaultApi {
 
   @Override
-  public ResponseEntity<SourceProvidersResponseApiDto> getSourceProviders(
-      String accept, String contentType, String userAgent) {
+  public ResponseEntity<SourceProvidersResponseApiDto> getSourceProviders() {
 
     SourceProvidersResponseApiDto response = new SourceProvidersResponseApiDto();
 
