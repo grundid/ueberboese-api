@@ -95,6 +95,58 @@ docker pull ghcr.io/USERNAME/REPOSITORY_NAME:latest
 docker run -p 8080:8080 ghcr.io/USERNAME/REPOSITORY_NAME:latest
 ```
 
+#### Docker Compose
+
+For easier deployment and configuration, you can use Docker Compose:
+
+**docker-compose.yml**:
+```yaml
+version: '3.8'
+
+services:
+  ueberboese-api:
+    image: ghcr.io/julius-d/ueberboese-api:latest
+    ports:
+      - "8080:8080"
+    environment:
+      # Configure the target host for proxy requests
+      - PROXY_TARGET_HOST=https://your-target-host.com
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+```
+
+**Usage**:
+```bash
+# Start the services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f ueberboese-api
+
+# Stop the services
+docker-compose down
+
+# Update to latest image and restart
+docker-compose pull && docker-compose up -d
+```
+
+**Configuration Options**:
+
+The application supports the following environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PROXY_TARGET_HOST` | `https://example.org` | Target host for proxying unknown requests |
+| `SPRING_PROFILES_ACTIVE` | - | Active Spring profiles (e.g., `production`, `development`) |
+| `SERVER_PORT` | `8080` | Port the application runs on |
+| `LOGGING_LEVEL_COM_GITHUB_JULIUSD` | `INFO` | Logging level for application packages |
+
 ### Testing
 
 The project includes comprehensive tests using REST Assured:
