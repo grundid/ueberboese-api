@@ -66,24 +66,30 @@ Docker images are automatically built and pushed to GitHub Container Registry (G
 
 - **Image location**: `ghcr.io/julius-d/ueberboese-api`
 - **Tags**:
+  - `X.Y.Z` (semantic version - automatically calculated)
   - `latest` (main branch)
   - `branch-name` (feature branches)
   - `sha-COMMIT_HASH` (all commits)
 
 ### CI/CD Pipeline
 
-The project uses a unified GitHub Actions workflow (`ci-cd.yml`) for continuous integration and deployment:
+The project uses a unified GitHub Actions workflow (`ci-cd.yml`) for continuous integration and deployment with **automatic semantic versioning**:
 
-1. **Test Application Job**: Runs on all pushes and pull requests
+1. **Semantic Versioning Job**: Calculates version based on conventional commits
+   - Analyzes commit messages following [Conventional Commits](https://www.conventionalcommits.org/)
+   - Determines next semantic version (MAJOR.MINOR.PATCH)
+   - Available for use in subsequent jobs
+
+2. **Test Application Job**: Runs on all pushes and pull requests
    - Sets up Java 21 with Maven caching
    - Generates OpenAPI sources
-   - Builds and tests the project with Maven
+   - Builds and tests the project with Maven using calculated semantic version
    - Uploads test results and JAR artifacts
 
-2. **Build & Push Docker Image Job**: Runs on pushes to main/develop branches (not on PRs)
-   - Builds Docker image using Spring Boot buildpacks
+3. **Build & Push Docker Image Job**: Runs on pushes to main/develop branches (not on PRs)
+   - Builds Docker image using Spring Boot buildpacks with semantic version
    - Pushes to GitHub Container Registry
-   - Tags images appropriately based on branch/commit
+   - Tags images with semantic version, commit SHA, and branch-specific tags
 
 #### Required GitHub Settings
 
@@ -92,6 +98,37 @@ For the CI/CD pipeline to work, ensure your GitHub repository has:
 1. **Actions enabled**: Go to repository Settings → Actions → General
 2. **Packages permissions**: The workflow uses `GITHUB_TOKEN` with `packages: write` permission (automatically available)
 3. **Container registry access**: No additional secrets needed, uses built-in `GITHUB_TOKEN`
+
+#### Semantic Versioning with Conventional Commits
+
+The project uses [Conventional Commits](https://www.conventionalcommits.org/) for automatic semantic versioning. Commit messages should follow this format:
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+**Version bumping rules:**
+- `feat:` → Minor version bump (new feature)
+- `fix:` → Patch version bump (bug fix)
+- `BREAKING CHANGE:` or `!` → Major version bump (breaking change)
+- Other types (`docs:`, `style:`, `refactor:`, `test:`, `chore:`) → No version bump
+
+**Examples:**
+```bash
+git commit -m "feat: add user authentication endpoint"     # 1.1.0
+git commit -m "fix: resolve null pointer in proxy service" # 1.0.1
+git commit -m "feat!: change API response format"          # 2.0.0
+git commit -m "docs: update README with new examples"      # No version bump
+```
+
+The calculated semantic version is automatically:
+- Applied to the Maven build (`pom.xml` uses `${revision}`)
+- Used for Docker image tagging in GitHub Container Registry
+- Stored in the built JAR file manifest
 
 #### Running Your Container
 
