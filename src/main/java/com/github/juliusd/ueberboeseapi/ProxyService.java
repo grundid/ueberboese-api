@@ -41,7 +41,7 @@ public class ProxyService {
    * @param requestBody the request body content
    * @return ResponseEntity with the proxied response
    */
-  public ResponseEntity<String> forwardRequest(HttpServletRequest request, String requestBody) {
+  public ResponseEntity<byte[]> forwardRequest(HttpServletRequest request, String requestBody) {
     String targetUrl = buildTargetUrl(request);
     HttpMethod method = HttpMethod.valueOf(request.getMethod());
 
@@ -82,11 +82,12 @@ public class ProxyService {
 
       if (clientResponse == null) {
         logger.error("Received null response from target");
-        return ResponseEntity.status(502).body("Bad Gateway - No response from target");
+        return ResponseEntity.status(502).body("Bad Gateway - No response from target".getBytes());
       }
 
-      // Get response body
-      String responseBody = clientResponse.bodyToMono(String.class).block();
+      // Get response body as bytes
+      byte[] responseBodyBytes = clientResponse.bodyToMono(byte[].class).block();
+      String responseBodyString = responseBodyBytes != null ? new String(responseBodyBytes) : null;
 
       // Log response details
       logger.info("=== PROXY RESPONSE ===");
@@ -97,15 +98,15 @@ public class ProxyService {
           .asHttpHeaders()
           .forEach((name, values) -> logger.info("  {}: {}", name, String.join(", ", values)));
 
-      if (responseBody != null) {
-        logger.info("Response Body: {}", responseBody);
+      if (responseBodyString != null) {
+        logger.info("Response Body: {}", responseBodyString);
       }
       logger.info("=== PROXY REQUEST END ===");
 
       // Build response entity
       return ResponseEntity.status(clientResponse.statusCode())
           .headers(clientResponse.headers().asHttpHeaders())
-          .body(responseBody);
+          .body(responseBodyBytes);
 
     } catch (WebClientResponseException e) {
       logger.error("=== PROXY ERROR ===");
@@ -114,14 +115,14 @@ public class ProxyService {
       logger.error("Error response body: {}", e.getResponseBodyAsString());
       logger.error("=== PROXY REQUEST END ===");
 
-      return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
+      return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString().getBytes());
 
     } catch (Exception e) {
       logger.error("=== PROXY ERROR ===");
       logger.error("Unexpected error forwarding request to {}", targetUrl, e);
       logger.error("=== PROXY REQUEST END ===");
 
-      return ResponseEntity.status(502).body("Bad Gateway - Error forwarding request");
+      return ResponseEntity.status(502).body("Bad Gateway - Error forwarding request".getBytes());
     }
   }
 

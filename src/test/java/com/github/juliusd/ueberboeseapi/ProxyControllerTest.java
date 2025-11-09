@@ -1,9 +1,24 @@
 package com.github.juliusd.ueberboeseapi;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToXml;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -12,199 +27,140 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-/**
- * Integration tests for the proxy functionality. Tests that unknown endpoints are properly
- * forwarded to the configured target.
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(
     properties = {
-      "proxy.target-host=https://httpbin.org",
-      "proxy.auth-target-host=https://httpbin.org/bearer"
+      "proxy.target-host=http://localhost:8089",
+      "proxy.auth-target-host=http://localhost:8090"
     })
 class ProxyControllerTest {
 
   @Autowired private MockMvc mockMvc;
 
-  @Test
-  void shouldForwardUnknownGetRequestToTarget() throws Exception {
-    // Test forwarding a GET request to target host
-    // We expect some response from the target (even if it's an error),
-    // which proves the proxy forwarding is working
-    mockMvc
-        .perform(
-            get("/unknown-endpoint")
-                .header("X-Test-Header", "test-value")
-                .contentType(MediaType.APPLICATION_JSON))
-        .andExpect(
-            result -> {
-              // The important thing is that we get a response from the target host,
-              // not a 404 from our application (which would indicate no forwarding)
-              int status = result.getResponse().getStatus();
-              assertTrue(
-                  status == 200 || status == 404 || status == 503,
-                  "Expected response from target host (200, 404, or 503), but got: " + status);
-            });
+  private WireMockServer wireMockServer;
+  private WireMockServer authWireMockServer;
+
+  @BeforeEach
+  void setUp() {
+    // Set up main target host mock server
+    wireMockServer = new WireMockServer(options().port(8089));
+    wireMockServer.start();
+
+    // Set up auth target host mock server
+    authWireMockServer = new WireMockServer(options().port(8090));
+    authWireMockServer.start();
+  }
+
+  @AfterEach
+  void tearDown() {
+    if (wireMockServer != null) {
+      wireMockServer.stop();
+    }
+    if (authWireMockServer != null) {
+      authWireMockServer.stop();
+    }
   }
 
   @Test
-  void shouldForwardUnknownPostRequestToTarget() throws Exception {
-    // Test forwarding a POST request to target host
-    String requestBody = "{\"test\": \"data\"}";
+  void shouldForwardJsonRequestBodyCorrectly() throws Exception {
+    // Given
+    String requestBody =
+        """
+                         {"test": "data", "action": "create"}
+                         """;
+    String responseBody =
+        """
+                          {"status": "success", "id": 123}
+                          """;
 
+    wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/api/test"))
+            .withRequestBody(equalToJson(requestBody))
+            .withHeader("Content-Type", containing("application/json"))
+            .withHeader("X-Test-Header", equalTo("test-value"))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(responseBody)));
+
+    // When & Then
     mockMvc
         .perform(
             post("/api/test")
                 .header("X-Test-Header", "test-value")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-        .andExpect(
-            result -> {
-              // The important thing is that we get a response from the target host,
-              // not a 404 from our application (which would indicate no forwarding)
-              int status = result.getResponse().getStatus();
-              assertTrue(
-                  status == 200 || status == 404 || status == 503,
-                  "Expected response from target host (200, 404, or 503), but got: " + status);
-            });
-  }
-
-  @Test
-  void shouldNotForwardKnownEndpoints() throws Exception {
-    // Test that known endpoints are not forwarded
-    mockMvc
-        .perform(
-            get("/streaming/sourceproviders")
-                .contentType("application/vnd.bose.streaming-v1.2+xml"))
         .andExpect(status().isOk())
-        .andExpect(content().contentType("application/vnd.bose.streaming-v1.2+xml"));
+        .andExpect(content().contentType("application/json"))
+        .andExpect(content().json(responseBody));
+
+    // Verify the request was received by WireMock with correct body
+    wireMockServer.verify(
+        postRequestedFor(urlEqualTo("/api/test"))
+            .withRequestBody(equalToJson(requestBody))
+            .withHeader("Content-Type", containing("application/json"))
+            .withHeader("X-Test-Header", equalTo("test-value")));
   }
 
   @Test
-  void shouldForwardRequestWithQueryParameters() throws Exception {
-    // Test forwarding a request with query parameters
-    mockMvc
-        .perform(
-            get("/test-with-params")
-                .param("param1", "value1")
-                .param("param2", "value2")
-                .header("X-Custom-Header", "custom-value"))
-        .andExpect(
-            result -> {
-              // The important thing is that we get a response from the target host,
-              // which proves query parameters are forwarded correctly
-              int status = result.getResponse().getStatus();
-              assertTrue(
-                  status == 200 || status == 404 || status == 503,
-                  "Expected response from target host (200, 404, or 503), but got: " + status);
-            });
-  }
-
-  @Test
-  void shouldForwardAuthHostHeaderRequestsToAuthTargetHost() throws Exception {
-    // Test that requests with "auth" in the Host header are forwarded to auth target host
-    mockMvc
-        .perform(
-            get("/api/login")
-                .header("Host", "auth.example.com")
-                .contentType(MediaType.APPLICATION_JSON))
-        .andExpect(
-            result -> {
-              // Should get response from auth target host
-              int status = result.getResponse().getStatus();
-              assertTrue(
-                  status == 200 || status == 404 || status == 503,
-                  "Expected response from auth target host (200, 404, or 503), but got: " + status);
-            });
-  }
-
-  @Test
-  void shouldForwardAuthHostHeaderWithSubdomainToAuthTargetHost() throws Exception {
-    // Test that requests with "auth" in the Host header subdomain are forwarded to auth target host
-    mockMvc
-        .perform(
-            get("/api/user")
-                .header("Host", "api.authentication.service.com")
-                .contentType(MediaType.APPLICATION_JSON))
-        .andExpect(
-            result -> {
-              // Should get response from auth target host
-              int status = result.getResponse().getStatus();
-              assertTrue(
-                  status == 200 || status == 404 || status == 503,
-                  "Expected response from auth target host (200, 404, or 503), but got: " + status);
-            });
-  }
-
-  @Test
-  void shouldForwardNonAuthRequestsToDefaultTargetHost() throws Exception {
-    // Test that non-auth requests still go to default target host
-    mockMvc
-        .perform(get("/api/products").contentType(MediaType.APPLICATION_JSON))
-        .andExpect(
-            result -> {
-              // Should get response from default target host
-              int status = result.getResponse().getStatus();
-              assertTrue(
-                  status == 200 || status == 404 || status == 503,
-                  "Expected response from default target host (200, 404, or 503), but got: "
-                      + status);
-            });
-  }
-
-  @Test
-  void shouldForwardXmlRequestBodyToTarget() throws Exception {
-    // Test forwarding XML request body to target host
+  void shouldForwardXmlRequestBodyCorrectly() throws Exception {
+    // Given
     String xmlRequestBody =
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-            + "<streaming>\n"
-            + "  <source>test</source>\n"
-            + "  <action>play</action>\n"
-            + "</streaming>";
+        """
+       <?xml version="1.0" encoding="UTF-8"?>
+       <streaming>
+         <source>test-source</source>
+         <action>play</action>
+         <volume>75</volume>
+       </streaming>""";
 
+    String xmlResponseBody =
+        """
+       <?xml version="1.0" encoding="UTF-8"?>
+       <response>
+         <status>success</status>
+         <message>Playback started</message>
+       </response>""";
+
+    wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/streaming/play"))
+            .withRequestBody(equalToXml(xmlRequestBody))
+            .withHeader("Content-Type", containing("application/vnd.bose.streaming-v1.2+xml"))
+            .withHeader("X-Test-Header", equalTo("xml-test"))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
+                    .withBody(xmlResponseBody)));
+
+    // When & Then
     mockMvc
         .perform(
             post("/streaming/play")
                 .header("X-Test-Header", "xml-test")
                 .contentType("application/vnd.bose.streaming-v1.2+xml")
                 .content(xmlRequestBody))
-        .andExpect(
-            result -> {
-              // The important thing is that we get a response from the target host,
-              // indicating that the XML body was properly forwarded
-              int status = result.getResponse().getStatus();
-              assertTrue(
-                  status == 200 || status == 404 || status == 503,
-                  "Expected response from target host (200, 404, or 503), but got: " + status);
-            });
+        .andExpect(status().isOk())
+        .andExpect(content().contentType("application/vnd.bose.streaming-v1.2+xml"))
+        .andExpect(content().string(xmlResponseBody));
+
+    // Verify the XML request was received correctly
+    wireMockServer.verify(
+        postRequestedFor(urlEqualTo("/streaming/play"))
+            .withRequestBody(equalToXml(xmlRequestBody))
+            .withHeader("Content-Type", containing("application/vnd.bose.streaming-v1.2+xml"))
+            .withHeader("X-Test-Header", equalTo("xml-test")));
   }
 
   @Test
-  void shouldHandleEmptyRequestBodyGracefully() throws Exception {
-    // Test that requests without body are handled correctly
-    mockMvc
-        .perform(
-            post("/api/empty")
-                .header("X-Test-Header", "empty-body-test")
-                .contentType(MediaType.APPLICATION_JSON))
-        .andExpect(
-            result -> {
-              // Should still forward the request even without body
-              int status = result.getResponse().getStatus();
-              assertTrue(
-                  status == 200 || status == 404 || status == 503,
-                  "Expected response from target host (200, 404, or 503), but got: " + status);
-            });
-  }
-
-  @Test
-  void shouldHandleLargeRequestBodyCorrectly() throws Exception {
-    // Test forwarding a larger request body to ensure our fix works with various sizes
-    StringBuilder largeBody = new StringBuilder();
-    largeBody.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<streaming>\n");
+  void shouldForwardLargeRequestBodyCorrectly() throws Exception {
+    // Given - Create a large XML body
+    StringBuilder largeXmlBody = new StringBuilder();
+    largeXmlBody.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<streaming>\n");
     for (int i = 0; i < 100; i++) {
-      largeBody
+      largeXmlBody
           .append("  <item id=\"")
           .append(i)
           .append("\">")
@@ -212,21 +168,224 @@ class ProxyControllerTest {
           .append(i)
           .append("</item>\n");
     }
-    largeBody.append("</streaming>");
+    largeXmlBody.append("</streaming>");
 
+    String responseBody = "<status>processed</status>";
+
+    wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/streaming/bulk"))
+            .withHeader("Content-Type", containing("application/vnd.bose.streaming-v1.2+xml"))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/xml")
+                    .withBody(responseBody)));
+
+    // When & Then
     mockMvc
         .perform(
             post("/streaming/bulk")
                 .header("X-Test-Header", "large-body-test")
                 .contentType("application/vnd.bose.streaming-v1.2+xml")
-                .content(largeBody.toString()))
-        .andExpect(
-            result -> {
-              // Should handle large bodies correctly
-              int status = result.getResponse().getStatus();
-              assertTrue(
-                  status == 200 || status == 404 || status == 503,
-                  "Expected response from target host (200, 404, or 503), but got: " + status);
-            });
+                .content(largeXmlBody.toString()))
+        .andExpect(status().isOk())
+        .andExpect(content().string(responseBody));
+
+    // Verify the large request was received correctly
+    wireMockServer.verify(
+        postRequestedFor(urlEqualTo("/streaming/bulk"))
+            .withRequestBody(equalToXml(largeXmlBody.toString())));
+  }
+
+  @Test
+  void shouldHandleEmptyRequestBodyCorrectly() throws Exception {
+    wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/api/empty"))
+            .willReturn(aResponse().withStatus(200).withBody("OK")));
+
+    mockMvc
+        .perform(
+            post("/api/empty")
+                .header("X-Test-Header", "empty-body-test")
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(content().string("OK"));
+
+    wireMockServer.verify(postRequestedFor(urlEqualTo("/api/empty")));
+  }
+
+  @Test
+  void shouldForwardRequestsWithSpecialCharacters() throws Exception {
+    // Given - XML with special characters and encoding
+    String xmlWithSpecialChars =
+        """
+       <?xml version="1.0" encoding="UTF-8"?>
+       <streaming>
+         <title>Café &amp; Résumé</title>
+         <description>Special chars: äöü €£¥ ñáéíóú</description>
+         <emoji>🎵🎶</emoji>
+       </streaming>""";
+
+    wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/streaming/special"))
+            .willReturn(aResponse().withStatus(200).withBody("Special chars handled")));
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/streaming/special")
+                .contentType("application/vnd.bose.streaming-v1.2+xml")
+                .content(xmlWithSpecialChars))
+        .andExpect(status().isOk())
+        .andExpect(content().string("Special chars handled"));
+
+    // Verify special characters were preserved
+    wireMockServer.verify(
+        postRequestedFor(urlEqualTo("/streaming/special"))
+            .withRequestBody(equalToXml(xmlWithSpecialChars)));
+  }
+
+  @Test
+  void shouldForwardRequestsToAuthTargetHost() throws Exception {
+    // Given
+    String authRequestBody =
+        """
+                             {"username": "test", "password": "secret"}
+                             """;
+
+    authWireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/api/login"))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"token\": \"abc123\"}")));
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/api/login")
+                .header("Host", "auth.example.com")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(authRequestBody))
+        .andExpect(status().isOk())
+        .andExpect(content().json("{\"token\": \"abc123\"}"));
+
+    // Verify request went to auth server
+    authWireMockServer.verify(
+        postRequestedFor(urlEqualTo("/api/login")).withRequestBody(equalToJson(authRequestBody)));
+  }
+
+  @Test
+  void shouldHandleTargetServerError() throws Exception {
+    // Given
+    String requestBody = "{\"test\": \"error\"}";
+
+    wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/api/error"))
+            .willReturn(
+                aResponse()
+                    .withStatus(500)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"error\": \"Internal server error\"}")));
+
+    // When & Then
+    mockMvc
+        .perform(post("/api/error").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+        .andExpect(status().isInternalServerError())
+        .andExpect(content().json("{\"error\": \"Internal server error\"}"));
+
+    // Verify request was still forwarded correctly
+    wireMockServer.verify(
+        postRequestedFor(urlEqualTo("/api/error")).withRequestBody(equalToJson(requestBody)));
+  }
+
+  @Test
+  void shouldForwardGetRequest() throws Exception {
+    // Given
+    wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/unknown-endpoint"))
+            .withHeader("X-Test-Header", equalTo("test-value"))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"message\": \"forwarded\"}")));
+
+    // When & Then
+    mockMvc
+        .perform(
+            get("/unknown-endpoint")
+                .header("X-Test-Header", "test-value")
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(content().json("{\"message\": \"forwarded\"}"));
+
+    // Verify request was forwarded correctly
+    wireMockServer.verify(
+        getRequestedFor(urlEqualTo("/unknown-endpoint"))
+            .withHeader("X-Test-Header", equalTo("test-value")));
+  }
+
+  @Test
+  void shouldNotForwardKnownEndpoints() throws Exception {
+    // Test that known endpoints are not forwarded but handled internally
+    mockMvc
+        .perform(
+            get("/streaming/sourceproviders")
+                .contentType("application/vnd.bose.streaming-v1.2+xml"))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType("application/vnd.bose.streaming-v1.2+xml"));
+
+    // Verify no request was made to WireMock (since it should be handled internally)
+    wireMockServer.verify(0, getRequestedFor(urlMatching("/streaming/.*")));
+  }
+
+  @Test
+  void shouldForwardGetRequestWithQueryParameters() throws Exception {
+    // Given
+    wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/test-with-params?param1=value1&param2=value2"))
+            .withHeader("X-Custom-Header", equalTo("custom-value"))
+            .willReturn(aResponse().withStatus(200).withBody("Query params forwarded")));
+
+    // When & Then
+    mockMvc
+        .perform(
+            get("/test-with-params?param1=value1&param2=value2")
+                .header("X-Custom-Header", "custom-value"))
+        .andExpect(status().isOk())
+        .andExpect(content().string("Query params forwarded"));
+
+    // Verify query parameters were forwarded
+    wireMockServer.verify(
+        getRequestedFor(urlEqualTo("/test-with-params?param1=value1&param2=value2"))
+            .withHeader("X-Custom-Header", equalTo("custom-value")));
+  }
+
+  @Test
+  void shouldForwardNonAuthRequestsToDefaultTargetHost() throws Exception {
+    // Given
+    wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/api/products"))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("""
+                              {"products": []}""")));
+
+    // When & Then
+    mockMvc
+        .perform(get("/api/products").contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(content().json("""
+                                  {"products": []}"""));
+
+    // Verify request went to main server
+    wireMockServer.verify(getRequestedFor(urlEqualTo("/api/products")));
+
+    // Verify request did NOT go to auth server
+    authWireMockServer.verify(0, getRequestedFor(urlEqualTo("/api/products")));
   }
 }
