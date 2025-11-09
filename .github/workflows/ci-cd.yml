@@ -34,6 +34,7 @@ jobs:
         version_format: "${major}.${minor}.${patch}"
         search_commit_body: true
         user_format_type: "csv"
+        debug: true
 
   test:
     name: Test Application
