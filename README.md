@@ -125,6 +125,9 @@ services:
       # Configure the target hosts for proxy requests
       - PROXY_TARGET_HOST=https://your-target-host.com
       - PROXY_AUTH_TARGET_HOST=https://auth.your-target-host.com
+    volumes:
+      # Persist application logs on the host system
+      - ./logs:/app/logs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
@@ -137,11 +140,17 @@ services:
 
 **Usage**:
 ```bash
+# Create logs directory on host (if it doesn't exist)
+mkdir -p logs
+
 # Start the services
 docker compose up -d
 
-# View logs
+# View logs (Docker container logs)
 docker compose logs -f ueberboese-api
+
+# View application logs (persistent log files)
+tail -f logs/proxy-requests.log
 
 # Stop the services
 docker compose down
@@ -149,6 +158,15 @@ docker compose down
 # Update to latest image and restart
 docker compose pull && docker compose up -d
 ```
+
+**Persistent Logging**:
+
+The docker-compose configuration includes a volume mount that persists application log files on the host system:
+- **Host path**: `./logs` (relative to docker-compose.yml location)
+- **Container path**: `/app/logs` (where the application writes log files)
+- **Log files**: `proxy-requests.log` and other application logs will be persisted
+
+This ensures that log files are retained even when containers are stopped, restarted, or updated.
 
 **Configuration Options**:
 
