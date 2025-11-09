@@ -24,13 +24,16 @@ jobs:
 
     - name: Calculate semantic version
       id: semver
-      uses: TriPSs/conventional-changelog-action@v5
+      uses: paulhatch/semantic-version@v5.4.0
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        output-file: "false"
-        skip-version-file: "true"
-        skip-commit: "true"
-        git-push: "false"
+        tag_prefix: "v"
+        major_pattern: "BREAKING CHANGE:"
+        major_regexp_flags: "gm"
+        minor_pattern: "feat:"
+        minor_regexp_flags: "gm"
+        version_format: "${major}.${minor}.${patch}"
+        search_commit_body: true
+        user_format_type: "csv"
 
   test:
     name: Test Application
