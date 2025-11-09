@@ -22,6 +22,7 @@ public class ProxyController {
     /**
      * Catches all unmapped requests and forwards them to the target host.
      * This mapping has the lowest priority due to the /** pattern.
+     * Actuator endpoints are excluded by using a path condition.
      *
      * @param request the HTTP request
      * @param body the request body (optional)

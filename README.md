@@ -35,7 +35,16 @@ The application will be available at `http://localhost:8080`.
 
 ### API Endpoints
 
+**Main Application (Port 8080):**
 - `GET /streaming/sourceproviders` - Returns list of source providers in XML format
+- All other requests are proxied to the configured target host
+
+**Management/Actuator Endpoints (Port 8081):**
+- `GET /actuator/health` - Application health status
+- `GET /actuator/info` - Application information
+- `GET /actuator/metrics` - Application metrics
+- `GET /actuator/env` - Environment properties
+- `GET /actuator/loggers` - Logging configuration
 
 ### Docker
 
@@ -45,8 +54,8 @@ The application will be available at `http://localhost:8080`.
 # Build Docker image using Spring Boot buildpacks
 mvn spring-boot:build-image
 
-# Run the container
-docker run -p 8080:8080 ueberboese-api:0.0.1-SNAPSHOT
+# Run the container (expose both main and management ports)
+docker run -p 8080:8080 -p 8081:8081 ueberboese-api:0.0.1-SNAPSHOT
 ```
 
 #### GitHub Container Registry
@@ -92,7 +101,7 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
 
 # Pull and run the latest image
 docker pull ghcr.io/USERNAME/REPOSITORY_NAME:latest
-docker run -p 8080:8080 ghcr.io/USERNAME/REPOSITORY_NAME:latest
+docker run -p 8080:8080 -p 8081:8081 ghcr.io/USERNAME/REPOSITORY_NAME:latest
 ```
 
 #### Docker Compose
@@ -107,13 +116,14 @@ services:
   ueberboese-api:
     image: ghcr.io/julius-d/ueberboese-api:latest
     ports:
-      - "8080:8080"
+      - "8080:8080"      # Main application
+      - "8081:8081"      # Management/Actuator endpoints
     environment:
       # Configure the target host for proxy requests
       - PROXY_TARGET_HOST=https://your-target-host.com
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -140,12 +150,13 @@ docker-compose pull && docker-compose up -d
 
 The application supports the following environment variables:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PROXY_TARGET_HOST` | `https://example.org` | Target host for proxying unknown requests |
-| `SPRING_PROFILES_ACTIVE` | - | Active Spring profiles (e.g., `production`, `development`) |
-| `SERVER_PORT` | `8080` | Port the application runs on |
-| `LOGGING_LEVEL_COM_GITHUB_JULIUSD` | `INFO` | Logging level for application packages |
+| Variable                           | Default               | Description                                                |
+|------------------------------------|-----------------------|------------------------------------------------------------|
+| `PROXY_TARGET_HOST`                | `https://example.org` | Target host for proxying unknown requests                  |
+| `SPRING_PROFILES_ACTIVE`           | -                     | Active Spring profiles (e.g., `production`, `development`) |
+| `SERVER_PORT`                      | `8080`                | Port the main application runs on                          |
+| `MANAGEMENT_SERVER_PORT`           | `8081`                | Port for actuator/management endpoints                     |
+| `LOGGING_LEVEL_COM_GITHUB_JULIUSD` | `INFO`                | Logging level for application packages                     |
 
 ### Testing
 
