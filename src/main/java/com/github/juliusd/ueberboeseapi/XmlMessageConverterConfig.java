@@ -14,7 +14,6 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
@@ -26,12 +25,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class XmlMessageConverterConfig implements WebMvcConfigurer {
 
   @Override
-  public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
+  public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
     MappingJackson2XmlHttpMessageConverter xmlConverter =
         new MappingJackson2XmlHttpMessageConverter();
 
     // Use the primary ObjectMapper bean we configured
-    xmlConverter.setObjectMapper(objectMapper());
+    xmlConverter.setObjectMapper(xmlObjectMapper());
 
     // Add support for the custom Bose XML content type
     List<MediaType> supportedMediaTypes = new ArrayList<>(xmlConverter.getSupportedMediaTypes());
@@ -42,8 +41,7 @@ public class XmlMessageConverterConfig implements WebMvcConfigurer {
     converters.add(1, xmlConverter);
   }
 
-  @Bean
-  public ObjectMapper objectMapper() {
+  public static ObjectMapper xmlObjectMapper() {
     XmlMapper xmlMapper = new XmlMapper();
     xmlMapper.enable(ToXmlGenerator.Feature.WRITE_XML_DECLARATION);
     xmlMapper.registerModule(new JavaTimeModule());
