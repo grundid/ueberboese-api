@@ -246,3 +246,21 @@ mvn test
 # Run specific test class
 mvn test -Dtest=UeberboeseControllerTest
 ```
+
+### Researching the API
+
+When running and using this docker-image, the log file folder will collect all request that made.
+To get a simple statistic, call
+```bash
+grep -r -h -o -P "Target URL: \K\S+" /path/to/your/log_folder | sort | uniq -c | sort -nr
+```
+
+This will return something like
+```
+    753 https://streaming.bose.com/streaming/account/6921042/full
+     74 https://streamingoauth.bose.com/oauth/device/587A628A4042/music/musicprovider/15/token/cs3
+     28 https://streaming.bose.com/streaming/account/6921042/device/587A628A4042/recent
+      9 https://streaming.bose.com/streaming/account/6921042/device/587A628A4042/recents
+      5 https://streaming.bose.com/streaming/support/power_on
+      2 https://streaming.bose.com/?serialnumber=123123AW
+```
