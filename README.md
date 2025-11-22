@@ -45,6 +45,8 @@ The application will be available at `http://localhost:8080`.
 
 **Main Application (Port 8080):**
 - `GET /streaming/sourceproviders` - Returns list of source providers in XML format
+- `POST /streaming/account/{accountId}/device/{deviceId}/recent` - Add recent item to device history (XML format)
+- `POST /oauth/device/{deviceId}/music/musicprovider/{providerId}/token/{tokenType}` - OAuth token refresh endpoint (JSON format, conditionally enabled)
 - All other requests are proxied to the configured target hosts based on content:
   - Auth-related requests (containing "auth" anywhere) → Auth target host
   - All other requests → Default target host
