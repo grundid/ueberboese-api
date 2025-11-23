@@ -1,6 +1,7 @@
 package com.github.juliusd.ueberboeseapi;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.xmlunit.matchers.CompareMatcher.isSimilarTo;
 
@@ -286,7 +287,7 @@ class UeberboeseControllerTest {
           <createdOn>2018-11-27T18:20:01.000+00:00</createdOn>
           <lastplayedat>2025-11-01T17:32:59.000+00:00</lastplayedat>
           <location>/v1/playback/station/s80044</location>
-          <name>Radio TEDDY</name>
+          <name>Radio Foobar</name>
           <source id="19989313" type="Audio">
             <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
             <credential type="token">
@@ -303,7 +304,7 @@ class UeberboeseControllerTest {
           <updatedOn>${xmlunit.isDateTime}</updatedOn>
         </recent>""";
 
-    org.hamcrest.MatcherAssert.assertThat(
+    assertThat(
         actualXml,
         isSimilarTo(expectedXml)
             .ignoreWhitespace()
@@ -382,8 +383,7 @@ class UeberboeseControllerTest {
           <updatedOn>${xmlunit.isDateTime}</updatedOn>
         </recent>""";
 
-    // Use XMLUnit placeholders to ignore dynamic fields (recent id and updatedOn)
-    org.hamcrest.MatcherAssert.assertThat(
+    assertThat(
         actualXml,
         isSimilarTo(expectedXml)
             .ignoreWhitespace()

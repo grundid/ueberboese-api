@@ -165,6 +165,64 @@ paths:
         '500':
           description: Internal server error
 
+  /streaming/account/{accountId}/full:
+    get:
+      summary: Get full account details
+      description: Retrieves complete account information including devices, presets, recents, and sources
+      operationId: getFullAccount
+      tags:
+        - experimental
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: Account identifier
+          schema:
+            type: string
+            example: "6921042"
+      responses:
+        '200':
+          description: Successful response with full account details
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/vnd.bose.streaming-v1.2+xml
+            METHOD_NAME:
+              schema:
+                type: string
+                example: getFullAccount
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+                example: "*"
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+                example: "GET, POST, OPTIONS"
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+                example: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+            Access-Control-Expose-Headers:
+              schema:
+                type: string
+                example: "Authorization"
+          content:
+            application/vnd.bose.streaming-v1.2+xml:
+              schema:
+                $ref: '#/components/schemas/FullAccountResponse'
+        '401':
+          description: Unauthorized - Invalid or missing Bearer token
+        '403':
+          description: Forbidden - Valid token but insufficient permissions
+        '404':
+          description: Not found - Account not found
+        '500':
+          description: Internal server error
+
   /oauth/device/{deviceId}/music/musicprovider/{providerId}/token/{tokenType}:
     post:
       summary: Refresh OAuth token
@@ -422,7 +480,7 @@ components:
           description: ISO 8601 timestamp when the source was created
           example: "2018-08-11T08:55:41.000+00:00"
         credential:
-          $ref: '#/components/schemas/Credential'
+          $ref: '#/components/schemas/RecentItemCredential'
         name:
           type: string
           description: Name of the source
@@ -450,13 +508,14 @@ components:
           description: Username associated with the source
           example: ""
 
-    Credential:
+    RecentItemCredential:
       type: object
-      description: Credential information for a source
+      description: Credential information for a recent item source
       xml:
         name: credential
       required:
         - type
+        - value
       properties:
         type:
           type: string
@@ -468,8 +527,93 @@ components:
           type: string
           description: Credential value/token
           xml:
-            wrapped: false
+            name: value
+            wrapped: true
           example: "eyDu="
+
+    FullAccountCredential:
+      type: object
+      description: Credential information for a source
+      xml:
+        name: credential
+      required:
+        - type
+        - value
+      properties:
+        type:
+          type: string
+          description: Type of credential
+          xml:
+            attribute: true
+          example: "token"
+        value:
+          type: string
+          description: Credential value/token
+          x-isXmlText: true
+          example: "eyDu="
+
+    DeviceSource:
+      type: object
+      description: Source information for device presets and recents
+      xml:
+        name: source
+      required:
+        - id
+        - type
+        - createdOn
+        - credential
+        - name
+        - sourceproviderid
+        - sourcename
+        - sourceSettings
+        - updatedOn
+        - username
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the source
+          xml:
+            attribute: true
+          example: "19989313"
+        type:
+          type: string
+          description: Type of the source
+          xml:
+            attribute: true
+          example: "Audio"
+        createdOn:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the source was created
+          example: "2018-08-11T08:55:41.000+00:00"
+        credential:
+          $ref: '#/components/schemas/FullAccountCredential'
+        name:
+          type: string
+          description: Name of the source
+          example: ""
+        sourceproviderid:
+          type: string
+          description: Identifier of the source provider
+          example: "25"
+        sourcename:
+          type: string
+          description: Name of the source
+          example: ""
+        sourceSettings:
+          type: object
+          description: Source settings (empty object)
+          xml:
+            name: sourceSettings
+        updatedOn:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the source was last updated
+          example: "2019-07-20T17:48:31.000+00:00"
+        username:
+          type: string
+          description: Username associated with the source
+          example: ""
 
     OAuthTokenRequest:
       type: object
@@ -519,3 +663,351 @@ components:
           type: string
           description: Space-separated list of granted scopes
           example: "playlist-read-private playlist-read-collaborative streaming user-library-read user-library-modify playlist-modify-private playlist-modify-public user-read-email user-read-private user-top-read"
+
+    FullAccountResponse:
+      type: object
+      description: XML response containing complete account information
+      xml:
+        name: account
+      required:
+        - id
+        - accountStatus
+        - devices
+        - mode
+        - preferredLanguage
+        - sources
+      properties:
+        id:
+          type: string
+          description: Account identifier
+          xml:
+            attribute: true
+          example: "6921042"
+        accountStatus:
+          type: string
+          description: Status of the account
+          example: "CHANGE_PASSWORD"
+        devices:
+          $ref: '#/components/schemas/DevicesContainer'
+        mode:
+          type: string
+          description: Account mode
+          example: "global"
+        preferredLanguage:
+          type: string
+          description: Preferred language code
+          example: "de"
+        sources:
+          $ref: '#/components/schemas/SourcesContainer'
+
+    DevicesContainer:
+      type: object
+      description: Container for devices
+      xml:
+        name: devices
+      properties:
+        device:
+          type: array
+          items:
+            $ref: '#/components/schemas/Device'
+          xml:
+            wrapped: false
+
+    Device:
+      type: object
+      description: Device information
+      xml:
+        name: device
+      required:
+        - deviceid
+        - attachedProduct
+        - createdOn
+        - firmwareVersion
+        - ipaddress
+        - name
+        - presets
+        - recents
+        - serialNumber
+        - updatedOn
+      properties:
+        deviceid:
+          type: string
+          description: Device identifier
+          xml:
+            attribute: true
+          example: "123980WER"
+        attachedProduct:
+          $ref: '#/components/schemas/AttachedProduct'
+        createdOn:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the device was created
+          example: "2018-08-11T08:55:25.000+00:00"
+        firmwareVersion:
+          type: string
+          description: Firmware version of the device
+          example: "27.0.6.46330.5043500 epdbuild.trunk.hepdswbld04.2022-08-04T11:20:29"
+        ipaddress:
+          type: string
+          description: IP address of the device
+          example: "192.168.178.2"
+        name:
+          type: string
+          description: Name of the device
+          example: "Foobar"
+        presets:
+          $ref: '#/components/schemas/PresetsContainer'
+        recents:
+          $ref: '#/components/schemas/RecentsContainer'
+        serialNumber:
+          type: string
+          description: Serial number of the device
+          example: "PUP43434234"
+        updatedOn:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the device was last updated
+          example: "2025-09-06T08:25:49.000+00:00"
+
+    AttachedProduct:
+      type: object
+      description: Product attached to the device
+      xml:
+        name: attachedProduct
+      required:
+        - product_code
+        - components
+        - productlabel
+        - serialnumber
+      properties:
+        product_code:
+          type: string
+          description: Product code
+          xml:
+            attribute: true
+          example: "SoundTouch 10 sm2"
+        components:
+          type: object
+          description: Components (empty object)
+          xml:
+            name: components
+        productlabel:
+          type: string
+          description: Product label
+          example: "soundtouch_10"
+        serialnumber:
+          type: string
+          description: Serial number of the product
+          example: "123SERIA1"
+
+    PresetsContainer:
+      type: object
+      description: Container for presets
+      xml:
+        name: presets
+      properties:
+        preset:
+          type: array
+          items:
+            $ref: '#/components/schemas/Preset'
+          xml:
+            wrapped: false
+
+    Preset:
+      type: object
+      description: Preset configuration
+      xml:
+        name: preset
+      required:
+        - buttonNumber
+        - containerArt
+        - contentItemType
+        - createdOn
+        - location
+        - name
+        - source
+        - updatedOn
+        - username
+      properties:
+        buttonNumber:
+          type: integer
+          description: Button number for the preset
+          xml:
+            attribute: true
+          example: 1
+        containerArt:
+          type: string
+          description: URL to the container art
+          example: "http://example.org/s80044q.png"
+        contentItemType:
+          type: string
+          description: Type of content item
+          example: "stationurl"
+        createdOn:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the preset was created
+          example: "2018-11-26T18:40:45.000+00:00"
+        location:
+          type: string
+          description: Location/path of the content
+          example: "/v1/playback/station/s80044"
+        name:
+          type: string
+          description: Name of the preset
+          example: "Radio Foobar"
+        source:
+          $ref: '#/components/schemas/DeviceSource'
+        updatedOn:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the preset was last updated
+          example: "2018-11-26T18:40:45.000+00:00"
+        username:
+          type: string
+          example: "Radio Foobar"
+
+    RecentsContainer:
+      type: object
+      description: Container for recent items
+      xml:
+        name: recents
+      properties:
+        recent:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecentItem'
+          xml:
+            wrapped: false
+
+    RecentItem:
+      type: object
+      description: Recent item played on the device
+      xml:
+        name: recent
+      required:
+        - id
+        - contentItemType
+        - createdOn
+        - lastplayedat
+        - location
+        - name
+        - source
+        - sourceid
+        - updatedOn
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the recent item
+          xml:
+            attribute: true
+          example: "123"
+        contentItemType:
+          type: string
+          description: Type of content item
+          example: "tracklisturl"
+        createdOn:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the item was created
+          example: "2025-11-09T11:40:37.000+00:00"
+        lastplayedat:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the item was last played
+          example: "2025-11-09T19:42:09.000+00:00"
+        location:
+          type: string
+          description: Location/path of the content
+          example: "/playback/container/35546f3"
+        name:
+          type: string
+          description: Name of the recent item
+          example: "A Name"
+        source:
+          $ref: '#/components/schemas/DeviceSource'
+        sourceid:
+          type: string
+          description: Identifier of the source
+          example: "19989643"
+        updatedOn:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the item was last updated
+          example: "2025-11-09T19:42:11.000+00:00"
+
+    SourcesContainer:
+      type: object
+      description: Container for sources
+      xml:
+        name: sources
+      properties:
+        source:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountSource'
+          xml:
+            wrapped: false
+
+    AccountSource:
+      type: object
+      description: Source information at account level
+      xml:
+        name: source
+      required:
+        - id
+        - type
+        - createdOn
+        - credential
+        - name
+        - sourceproviderid
+        - sourcename
+        - sourceSettings
+        - updatedOn
+        - username
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the source
+          xml:
+            attribute: true
+          example: "19989552"
+        type:
+          type: string
+          description: Type of the source
+          xml:
+            attribute: true
+          example: "Audio"
+        createdOn:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the source was created
+          example: "2018-08-11T08:55:28.000+00:00"
+        credential:
+          $ref: '#/components/schemas/FullAccountCredential'
+        name:
+          type: string
+          description: Name of the source
+          example: ""
+        sourceproviderid:
+          type: string
+          description: Identifier of the source provider
+          example: "2"
+        sourcename:
+          type: string
+          description: Name of the source
+          example: ""
+        sourceSettings:
+          type: object
+          description: Source settings (empty object)
+          xml:
+            name: sourceSettings
+        updatedOn:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the source was last updated
+          example: "2018-08-11T08:55:28.000+00:00"
+        username:
+          type: string
+          description: Username associated with the source
+          example: ""
