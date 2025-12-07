@@ -31,7 +31,7 @@ public class SpotifyTokenService {
 
       var authorizationCodeRefreshRequest = spotifyApi.authorizationCodeRefresh().build();
       var authorizationCodeCredentials = authorizationCodeRefreshRequest.execute();
-      log.info("Spotify auth refresh request successful");
+      log.info("Spotify auth refresh request successful with scope {}", authorizationCodeCredentials.getScope());
       return authorizationCodeCredentials;
     } catch (IOException | SpotifyWebApiException | ParseException e) {
       log.warn("Spotify auth failed: {}", e.getMessage());
