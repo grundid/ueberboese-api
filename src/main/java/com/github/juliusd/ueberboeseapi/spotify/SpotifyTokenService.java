@@ -20,7 +20,7 @@ public class SpotifyTokenService {
   public AuthorizationCodeCredentials loadSpotifyAuth(
       OAuthTokenRequestApiDto oauthTokenRequestApiDto) {
     try {
-      checkProperties();
+      checkProperties(oauthTokenRequestApiDto);
       SpotifyApi spotifyApi =
           new SpotifyApi.Builder()
               .setRefreshToken(spotifyAuthProperties.refreshToken())
@@ -40,7 +40,7 @@ public class SpotifyTokenService {
     }
   }
 
-  private void checkProperties() {
+  private void checkProperties(OAuthTokenRequestApiDto oauthTokenRequestApiDto) {
     if (spotifyAuthProperties.clientId() == null || spotifyAuthProperties.clientId().isBlank()) {
       log.warn("Spotify client ID is empty or not configured");
     }
@@ -52,5 +52,30 @@ public class SpotifyTokenService {
         || spotifyAuthProperties.refreshToken().isBlank()) {
       log.warn("Spotify refresh token is empty or not configured");
     }
+
+    // Check if request refresh token differs from configured token
+    String requestRefreshToken = oauthTokenRequestApiDto.getRefreshToken();
+    String configuredRefreshToken = spotifyAuthProperties.refreshToken();
+
+    if (requestRefreshToken != null
+        && configuredRefreshToken != null
+        && !requestRefreshToken.equals(configuredRefreshToken)) {
+      String requestTokenPreview = maskToken(requestRefreshToken);
+      String configuredTokenPreview = maskToken(configuredRefreshToken);
+
+      log.info(
+          "Refresh token mismatch - Request token: {}, Configured token: {}",
+          requestTokenPreview,
+          configuredTokenPreview);
+    }
+  }
+
+  private static String maskToken(String token) {
+    if (token == null || token.length() < 4) {
+      return "****";
+    }
+    String first2 = token.substring(0, 2);
+    String last2 = token.substring(token.length() - 2);
+    return first2 + "..." + last2;
   }
 }
