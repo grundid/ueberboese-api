@@ -154,5 +154,5 @@ jobs:
       with:
         subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         subject-digest: ${{ steps.image-digest.outputs.digest }}
-        sbom-path: target/bom.json
+        sbom-path: target/classes/META-INF/sbom/application.cdx.json
         push-to-registry: true
