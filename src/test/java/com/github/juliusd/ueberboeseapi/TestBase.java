@@ -11,7 +11,8 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       "ueberboese.experimental.enabled=true",
       "ueberboese.oauth.enabled=true",
-      "ueberboese.data-directory=./data"
+      "ueberboese.data-directory=src/test/resources/test-data",
+      "proxy.target-host=http://localhost:8089"
     })
 public class TestBase {
 

@@ -1,15 +1,38 @@
 package com.github.juliusd.ueberboeseapi;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.xmlunit.matchers.CompareMatcher.isSimilarTo;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.xmlunit.placeholder.PlaceholderDifferenceEvaluator;
 
 class UeberboeseExperimentalControllerTest extends TestBase {
+
+  private WireMockServer wireMockServer;
+
+  @BeforeEach
+  void setUpWireMock() {
+    wireMockServer = new WireMockServer(options().port(8089));
+    wireMockServer.start();
+  }
+
+  @AfterEach
+  void tearDownWireMock() {
+    if (wireMockServer != null) {
+      wireMockServer.stop();
+    }
+  }
 
   @Test
   void getFullAccount_shouldReturnCompleteAccountDetails() {
@@ -499,7 +522,7 @@ class UeberboeseExperimentalControllerTest extends TestBase {
         .header("User-agent", "Bose_Lisa/27.0.6")
         .header("Authorization", "Bearer foo/qtwq6FH/bar")
         .when()
-        .get("/streaming/account/6921073/full")
+        .get("/streaming/account/6921042/full")
         .then()
         .statusCode(200)
         .body(containsString("<name>Foobar</name>"))
@@ -527,5 +550,79 @@ class UeberboeseExperimentalControllerTest extends TestBase {
         .body(containsString("<account id=\"1234567\">"))
         .body(containsString("<accountStatus>CHANGE_PASSWORD</accountStatus>"))
         .body(containsString("<mode>global</mode>"));
+  }
+
+  @Test
+  void getFullAccount_shouldCacheThenServeFromCache() throws Exception {
+    // Given - use unique account ID that doesn't have cached file
+    String testAccountId = "cache-roundtrip-test";
+    Path cacheFile =
+        Paths.get(
+            "src/test/resources/test-data", "streaming-account-full-" + testAccountId + ".xml");
+
+    // Clean up cache file if exists from previous test run
+    Files.deleteIfExists(cacheFile);
+
+    // Setup WireMock stub for proxy response
+    String mockXmlResponse =
+        """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <account id="cache-roundtrip-test">
+          <accountStatus>ACTIVE</accountStatus>
+          <mode>regional</mode>
+          <preferredLanguage>en</preferredLanguage>
+        </account>
+        """;
+
+    wireMockServer.stubFor(
+        get(urlEqualTo("/streaming/account/" + testAccountId + "/full"))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
+                    .withBody(mockXmlResponse)));
+
+    // When - First request (cache miss)
+    String firstResponse =
+        given()
+            .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+            .when()
+            .get("/streaming/account/" + testAccountId + "/full")
+            .then()
+            .statusCode(200)
+            .contentType("application/vnd.bose.streaming-v1.2+xml")
+            .extract()
+            .body()
+            .asString();
+
+    // Then - Verify proxy was called once
+    wireMockServer.verify(
+        1, getRequestedFor(urlEqualTo("/streaming/account/" + testAccountId + "/full")));
+
+    // Verify cache file was created
+    assertTrue(Files.exists(cacheFile), "Cache file should exist after first request");
+
+    // When - Second request (cache hit)
+    String secondResponse =
+        given()
+            .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+            .when()
+            .get("/streaming/account/" + testAccountId + "/full")
+            .then()
+            .statusCode(200)
+            .contentType("application/vnd.bose.streaming-v1.2+xml")
+            .extract()
+            .body()
+            .asString();
+
+    // Then - Verify proxy was STILL only called once (not twice)
+    wireMockServer.verify(
+        1, getRequestedFor(urlEqualTo("/streaming/account/" + testAccountId + "/full")));
+
+    // Verify responses are identical
+    assertThat(firstResponse, isSimilarTo(secondResponse).ignoreWhitespace());
+
+    // Cleanup - remove test cache file
+    Files.deleteIfExists(cacheFile);
   }
 }

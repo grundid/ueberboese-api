@@ -34,3 +34,5 @@ build/
 
 
 /logs/
+# Data directory for runtime caching
+data/
