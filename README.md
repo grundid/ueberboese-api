@@ -246,7 +246,7 @@ The application supports the following environment variables:
 |------------------------------------|-----------------------|-----------------------------------------------------------------------------------|
 | `PROXY_TARGET_HOST`                | `https://example.org` | Default target host for proxying unknown requests                                 |
 | `PROXY_AUTH_TARGET_HOST`           | -                     | Auth-specific target host for requests containing "auth"                          |
-| `UEBERBOESE_DATA_DIRECTORY`        | `./data`              | Directory for cached account data. **Must be mounted as volume for persistence!** |
+| `UEBERBOESE_DATA_DIRECTORY`        | `/data`               | Directory for cached account data. **Must be mounted as volume for persistence!** |
 | `UEBERBOESE_OAUTH_ENABLED`         | `false`               | Enable OAuth token endpoints (set to `true` to activate)                          |
 | `UEBERBOESE_EXPERIMENTAL_ENABLED`  | `false`               | Enable experimental endpoints (set to `true` to activate)                         |
 | `SPRING_PROFILES_ACTIVE`           | -                     | Active Spring profiles (e.g., `production`, `development`)                        |
