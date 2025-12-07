@@ -13,7 +13,7 @@ The idea on how to achieve that is to revers-engineer and rebuild the bose strea
 1. The docker image of this project needs to be deployed via docker compose (see below)
 2. Make running service available under 3 domains.
    - `ueberboese.your-example-host.org`
-   - `ueberboeseauth.your-example-host.org`
+   - `ueberboeseoauth.your-example-host.org`
    - `ueberboese-downloads.your-example-host.org`
 
    Replace `your-example-host.org` with whatever you like.
