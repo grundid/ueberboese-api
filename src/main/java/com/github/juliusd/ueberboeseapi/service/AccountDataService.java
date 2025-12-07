@@ -7,14 +7,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class AccountDataService {
-
-  private static final Logger logger = LoggerFactory.getLogger(AccountDataService.class);
   private static final String ACCOUNT_FILE_PATTERN = "streaming-account-full-%s.xml";
 
   private final XmlMapper xmlMapper;
@@ -23,7 +21,7 @@ public class AccountDataService {
   public AccountDataService(XmlMapper xmlMapper, DataDirectoryProperties properties) {
     this.xmlMapper = xmlMapper;
     this.dataDirectory = properties.dataDirectory();
-    logger.info("AccountDataService initialized with data directory: {}", dataDirectory);
+    log.info("AccountDataService initialized with data directory: {}", dataDirectory);
   }
 
   /**
@@ -46,7 +44,7 @@ public class AccountDataService {
   private void ensureDirectoryExists(Path filePath) throws IOException {
     Path directory = filePath.getParent();
     if (directory != null && !Files.exists(directory)) {
-      logger.info("Creating data directory: {}", directory);
+      log.info("Creating data directory: {}", directory);
       Files.createDirectories(directory);
     }
   }
@@ -61,7 +59,7 @@ public class AccountDataService {
   public FullAccountResponseApiDto loadFullAccountData(String accountId) throws IOException {
     Path filePath = getAccountFilePath(accountId);
 
-    logger.debug("Attempting to load account data from: {}", filePath);
+    log.debug("Attempting to load account data from: {}", filePath);
 
     if (!Files.exists(filePath)) {
       throw new IOException("Account data file not found: " + filePath);
@@ -73,15 +71,15 @@ public class AccountDataService {
 
     try {
       String xmlContent = Files.readString(filePath);
-      logger.debug("Successfully read {} bytes from {}", xmlContent.length(), filePath);
+      log.debug("Successfully read {} bytes from {}", xmlContent.length(), filePath);
 
       FullAccountResponseApiDto accountData =
           xmlMapper.readValue(xmlContent, FullAccountResponseApiDto.class);
-      logger.info("Successfully parsed account data for accountId: {}", accountId);
+      log.info("Successfully parsed account data for accountId: {}", accountId);
 
       return accountData;
     } catch (Exception e) {
-      logger.error("Failed to parse XML file {}: {}", filePath, e.getMessage());
+      log.error("Failed to parse XML file {}: {}", filePath, e.getMessage());
       throw new IOException("Failed to parse account data file: " + filePath, e);
     }
   }
@@ -109,14 +107,14 @@ public class AccountDataService {
     Path filePath = getAccountFilePath(accountId);
     ensureDirectoryExists(filePath);
 
-    logger.debug("Attempting to save account data to: {}", filePath);
+    log.debug("Attempting to save account data to: {}", filePath);
 
     try {
       String xmlContent = xmlMapper.writeValueAsString(accountData);
       Files.writeString(filePath, xmlContent);
-      logger.info("Successfully saved account data for accountId: {} to {}", accountId, filePath);
+      log.info("Successfully saved account data for accountId: {} to {}", accountId, filePath);
     } catch (Exception e) {
-      logger.error("Failed to save account data to file {}: {}", filePath, e.getMessage());
+      log.error("Failed to save account data to file {}: {}", filePath, e.getMessage());
       throw new IOException("Failed to save account data file: " + filePath, e);
     }
   }
@@ -132,14 +130,13 @@ public class AccountDataService {
     Path filePath = getAccountFilePath(accountId);
     ensureDirectoryExists(filePath);
 
-    logger.debug("Attempting to save raw XML content to: {}", filePath);
+    log.debug("Attempting to save raw XML content to: {}", filePath);
 
     try {
       Files.writeString(filePath, xmlContent);
-      logger.info(
-          "Successfully saved raw XML content for accountId: {} to {}", accountId, filePath);
+      log.info("Successfully saved raw XML content for accountId: {} to {}", accountId, filePath);
     } catch (Exception e) {
-      logger.error("Failed to save raw XML content to file {}: {}", filePath, e.getMessage());
+      log.error("Failed to save raw XML content to file {}: {}", filePath, e.getMessage());
       throw new IOException("Failed to save account data file: " + filePath, e);
     }
   }

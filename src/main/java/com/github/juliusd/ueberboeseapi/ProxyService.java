@@ -1,8 +1,7 @@
 package com.github.juliusd.ueberboeseapi;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +16,8 @@ import reactor.core.publisher.Mono;
  * request and response details to a dedicated log file.
  */
 @Service
+@Slf4j
 public class ProxyService {
-
-  private static final Logger logger = LoggerFactory.getLogger(ProxyService.class);
 
   private final WebClient webClient;
   private final ProxyProperties proxyProperties;
@@ -45,15 +43,15 @@ public class ProxyService {
     String targetUrl = buildTargetUrl(request);
     HttpMethod method = HttpMethod.valueOf(request.getMethod());
 
-    logger.info("=== PROXY REQUEST START ===");
-    logger.info("Original URL: {}", request.getRequestURL());
-    logger.info("Target URL: {}", targetUrl);
-    logger.info("Method: {}", method);
+    log.info("=== PROXY REQUEST START ===");
+    log.info("Original URL: {}", request.getRequestURL());
+    log.info("Target URL: {}", targetUrl);
+    log.info("Method: {}", method);
     if (request.getQueryString() != null) {
-      logger.info("Content-Type: {}", request.getContentType());
+      log.info("Content-Type: {}", request.getContentType());
     }
     if (request.getContentLength() != -1) {
-      logger.info("Content-Length: {}", request.getContentLength());
+      log.info("Content-Length: {}", request.getContentLength());
     }
 
     // Log request headers
@@ -61,7 +59,7 @@ public class ProxyService {
 
     // Log request body if present
     if (requestBody != null && !requestBody.isEmpty()) {
-      logger.info("Request Body: {}", requestBody);
+      log.info("Request Body: {}", requestBody);
     }
 
     try {
@@ -81,7 +79,7 @@ public class ProxyService {
       ClientResponse clientResponse = responseMono.block();
 
       if (clientResponse == null) {
-        logger.error("Received null response from target");
+        log.error("Received null response from target");
         return ResponseEntity.status(502).body("Bad Gateway - No response from target".getBytes());
       }
 
@@ -90,18 +88,18 @@ public class ProxyService {
       String responseBodyString = responseBodyBytes != null ? new String(responseBodyBytes) : null;
 
       // Log response details
-      logger.info("=== PROXY RESPONSE ===");
-      logger.info("Status: {}", clientResponse.statusCode().value());
-      logger.info("Response Headers:");
+      log.info("=== PROXY RESPONSE ===");
+      log.info("Status: {}", clientResponse.statusCode().value());
+      log.info("Response Headers:");
       clientResponse
           .headers()
           .asHttpHeaders()
-          .forEach((name, values) -> logger.info("  {}: {}", name, String.join(", ", values)));
+          .forEach((name, values) -> log.info("  {}: {}", name, String.join(", ", values)));
 
       if (responseBodyString != null) {
-        logger.info("Response Body: {}", responseBodyString);
+        log.info("Response Body: {}", responseBodyString);
       }
-      logger.info("=== PROXY REQUEST END ===");
+      log.info("=== PROXY REQUEST END ===");
 
       // Build response entity
       return ResponseEntity.status(clientResponse.statusCode())
@@ -109,18 +107,18 @@ public class ProxyService {
           .body(responseBodyBytes);
 
     } catch (WebClientResponseException e) {
-      logger.error("=== PROXY ERROR ===");
-      logger.error(
+      log.error("=== PROXY ERROR ===");
+      log.error(
           "Error forwarding request to {}: {} {}", targetUrl, e.getStatusCode(), e.getStatusText());
-      logger.error("Error response body: {}", e.getResponseBodyAsString());
-      logger.error("=== PROXY REQUEST END ===");
+      log.error("Error response body: {}", e.getResponseBodyAsString());
+      log.error("=== PROXY REQUEST END ===");
 
       return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString().getBytes());
 
     } catch (Exception e) {
-      logger.error("=== PROXY ERROR ===");
-      logger.error("Unexpected error forwarding request to {}", targetUrl, e);
-      logger.error("=== PROXY REQUEST END ===");
+      log.error("=== PROXY ERROR ===");
+      log.error("Unexpected error forwarding request to {}", targetUrl, e);
+      log.error("=== PROXY REQUEST END ===");
 
       return ResponseEntity.status(502).body("Bad Gateway - Error forwarding request".getBytes());
     }
@@ -163,14 +161,14 @@ public class ProxyService {
   }
 
   private void logRequestHeaders(HttpServletRequest request) {
-    logger.info("Request Headers:");
+    log.info("Request Headers:");
     request
         .getHeaderNames()
         .asIterator()
         .forEachRemaining(
             headerName -> {
               String headerValue = request.getHeader(headerName);
-              logger.info("  {}: {}", headerName, headerValue);
+              log.info("  {}: {}", headerName, headerValue);
             });
   }
 

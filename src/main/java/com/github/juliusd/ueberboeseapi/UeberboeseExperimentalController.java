@@ -6,8 +6,7 @@ import com.github.juliusd.ueberboeseapi.generated.dtos.FullAccountResponseApiDto
 import com.github.juliusd.ueberboeseapi.service.AccountDataService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
@@ -15,10 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @ConditionalOnProperty(name = "ueberboese.experimental.enabled", havingValue = "true")
+@Slf4j
 public class UeberboeseExperimentalController implements ExperimentalApi {
-
-  private static final Logger logger =
-      LoggerFactory.getLogger(UeberboeseExperimentalController.class);
 
   private final AccountDataService accountDataService;
   private final ProxyService proxyService;
@@ -35,13 +32,13 @@ public class UeberboeseExperimentalController implements ExperimentalApi {
 
   @Override
   public ResponseEntity<FullAccountResponseApiDto> getFullAccount(String accountId) {
-    logger.debug("Getting full account data for accountId: {}", accountId);
+    log.debug("Getting full account data for accountId: {}", accountId);
 
     // Check if cached data exists
     if (accountDataService.hasAccountData(accountId)) {
       try {
         FullAccountResponseApiDto response = accountDataService.loadFullAccountData(accountId);
-        logger.info("Successfully loaded account data from cache for accountId: {}", accountId);
+        log.info("Successfully loaded account data from cache for accountId: {}", accountId);
 
         return ResponseEntity.ok()
             .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
@@ -54,7 +51,7 @@ public class UeberboeseExperimentalController implements ExperimentalApi {
             .header("Access-Control-Expose-Headers", "Authorization")
             .body(response);
       } catch (IOException e) {
-        logger.error(
+        log.error(
             "Failed to load account data from cache for accountId: {}, error: {}",
             accountId,
             e.getMessage());
@@ -65,12 +62,12 @@ public class UeberboeseExperimentalController implements ExperimentalApi {
     }
 
     // Cache miss - forward request to proxy
-    logger.info("Cache miss for accountId: {}, forwarding request to proxy", accountId);
+    log.info("Cache miss for accountId: {}, forwarding request to proxy", accountId);
     ResponseEntity<byte[]> proxyResponse = proxyService.forwardRequest(request, null);
 
     // Check if proxy response is successful
     if (!proxyResponse.getStatusCode().is2xxSuccessful() || proxyResponse.getBody() == null) {
-      logger.warn(
+      log.warn(
           "Proxy request failed for accountId: {}, status: {}",
           accountId,
           proxyResponse.getStatusCode());
@@ -88,9 +85,9 @@ public class UeberboeseExperimentalController implements ExperimentalApi {
       // Cache the response for future use
       try {
         accountDataService.saveFullAccountDataRaw(accountId, xmlContent);
-        logger.info("Successfully cached account data for accountId: {}", accountId);
+        log.info("Successfully cached account data for accountId: {}", accountId);
       } catch (Exception saveException) {
-        logger.error(
+        log.error(
             "Failed to cache account data for accountId: {}, continuing with response. Error: {}",
             accountId,
             saveException.getMessage());
@@ -100,7 +97,7 @@ public class UeberboeseExperimentalController implements ExperimentalApi {
           .headers(proxyResponse.getHeaders())
           .body(parsedResponse);
     } catch (Exception parseException) {
-      logger.error(
+      log.error(
           "Failed to parse proxy response for accountId: {}. Error: {}",
           accountId,
           parseException.getMessage());
