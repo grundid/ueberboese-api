@@ -5,6 +5,7 @@ import com.github.juliusd.ueberboeseapi.generated.dtos.OAuthTokenRequestApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.OAuthTokenResponseApiDto;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyTokenService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @ConditionalOnProperty(name = "ueberboese.oauth.enabled", havingValue = "true")
 @RequiredArgsConstructor
+@Slf4j
 public class UeberboeseOauthController implements OauthApi {
 
   private final SpotifyTokenService spotifyTokenService;
@@ -22,7 +24,7 @@ public class UeberboeseOauthController implements OauthApi {
       String providerId,
       String tokenType,
       OAuthTokenRequestApiDto oauthTokenRequestApiDto) {
-
+    log.info("refreshOAuthToken request: {}, {}, {}", deviceId, providerId, tokenType);
     var authorizationCodeCredentials = spotifyTokenService.loadSpotifyAuth(oauthTokenRequestApiDto);
 
     // Create the response object with example values from the captured proxy log
