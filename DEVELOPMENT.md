@@ -93,6 +93,19 @@ The calculated semantic version is automatically:
 - Used for Docker image tagging in GitHub Container Registry
 - Stored in the built JAR file manifest
 
+### Docker
+
+#### GitHub Container Registry
+
+Docker images are automatically built and pushed to GitHub Container Registry (GHCR) via GitHub Actions:
+
+- **Image location**: `ghcr.io/julius-d/ueberboese-api`
+- **Tags**:
+  - `X.Y.Z` (semantic version - automatically calculated)
+  - `latest` (main branch)
+  - `branch-name` (feature branches)
+  - `sha-COMMIT_HASH` (all commits)
+
 #### Running Your Container
 
 After the pipeline runs, pull and run your image:
@@ -118,3 +131,22 @@ mvn test
 # Run specific test class
 mvn test -Dtest=UeberboeseControllerTest
 ```
+
+### API Endpoints
+
+**Main Application (Port 8080):**
+- `GET /streaming/sourceproviders` - Returns a list of source providers in XML format
+- `POST /streaming/account/{accountId}/device/{deviceId}/recent` - Add recent item to device history (XML format)
+- `GET /streaming/account/{accountId}/full` - Experimental endpoint (requires `ueberboese.experimental.enabled=true`)
+- `POST /oauth/device/{deviceId}/music/musicprovider/{providerId}/token/{tokenType}` - OAuth token refresh endpoint (JSON format, conditionally enabled)
+- All other requests are proxied to the configured target hosts based on the Host header:
+  - Auth-related requests (Host contains "auth") → Auth target host
+  - Software update requests (Host contains "downloads") → Software update target host
+  - All other requests → Default target host
+
+**Management/Actuator Endpoints (Port 8081):**
+- `GET /actuator/health` - Application health status
+- `GET /actuator/info` - Application information
+- `GET /actuator/metrics` - Application metrics
+- `GET /actuator/env` - Environment properties
+- `GET /actuator/loggers` - Logging configuration

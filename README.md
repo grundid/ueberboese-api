@@ -4,7 +4,7 @@
 Bose has announced the end of life for its consumer streaming boxes called SoundTouch ☹️
 This will render millions of completely working streaming boxes useless.
 
-The aim of this project is to make sure that SoundTouch boxes can still be used for a long time.
+The aim oef this project is to make sure that SoundTouch boxes can still be used for a long time.
 
 The idea to achieve that is to reverse-engineer and rebuild the Bose streaming HTTP API.
 
@@ -35,39 +35,7 @@ The idea to achieve that is to reverse-engineer and rebuild the Bose streaming H
    - Configure `SPOTIFY_AUTH_CLIENT_ID` and `SPOTIFY_AUTH_CLIENT_SECRET` (see below)
    - For now, the creation of `SPOTIFY_AUTH_REFRESH_TOKEN` is manual and bumpy, but hey, it works!
 
-### API Endpoints
-
-**Main Application (Port 8080):**
-- `GET /streaming/sourceproviders` - Returns a list of source providers in XML format
-- `POST /streaming/account/{accountId}/device/{deviceId}/recent` - Add recent item to device history (XML format)
-- `GET /streaming/account/{accountId}/full` - Experimental endpoint (requires `ueberboese.experimental.enabled=true`)
-- `POST /oauth/device/{deviceId}/music/musicprovider/{providerId}/token/{tokenType}` - OAuth token refresh endpoint (JSON format, conditionally enabled)
-- All other requests are proxied to the configured target hosts based on the Host header:
-  - Auth-related requests (Host contains "auth") → Auth target host
-  - Software update requests (Host contains "downloads") → Software update target host
-  - All other requests → Default target host
-
-**Management/Actuator Endpoints (Port 8081):**
-- `GET /actuator/health` - Application health status
-- `GET /actuator/info` - Application information
-- `GET /actuator/metrics` - Application metrics
-- `GET /actuator/env` - Environment properties
-- `GET /actuator/loggers` - Logging configuration
-
-### Docker
-
-#### GitHub Container Registry
-
-Docker images are automatically built and pushed to GitHub Container Registry (GHCR) via GitHub Actions:
-
-- **Image location**: `ghcr.io/julius-d/ueberboese-api`
-- **Tags**:
-  - `X.Y.Z` (semantic version - automatically calculated)
-  - `latest` (main branch)
-  - `branch-name` (feature branches)
-  - `sha-COMMIT_HASH` (all commits)
-
-#### Docker Compose
+### Docker Compose
 
 For deployment and configuration, use Docker Compose:
 
