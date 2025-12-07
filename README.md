@@ -8,38 +8,32 @@ The aim of this project is to make sure that SoundTouch boxes can still be used 
 
 The idea on how to achieve that is to revers-engineer and rebuild the bose streaming http api.
 
+## Installation
 
+1. The docker image of this project needs to be deployed via docker compose (see below)
+2. Make running service available under 3 domains.
+   - `ueberboese.your-example-host.org`
+   - `ueberboeseauth.your-example-host.org`
+   - `ueberboese-downloads.your-example-host.org`
 
-## Features
-
-- REST API with XML response support
-- Custom Bose streaming media type (`application/vnd.bose.streaming-v1.2+xml`)
-- OpenAPI 3.0.3 specification with code generation
-- Docker containerization with Spring Boot buildpacks
-- Automated CI/CD with GitHub Actions
-
-## Development
-
-### Prerequisites
-
-- Java 21
-- Maven 3.6+
-- Docker (optional, for local container testing)
-
-### Running the Application
-
-```bash
-# Generate OpenAPI code
-mvn generate-sources
-
-# Run tests
-mvn test
-
-# Start the application
-mvn spring-boot:run
-```
-
-The application will be available at `http://localhost:8080`.
+   Replace `your-example-host.org` with whatever you like.
+   The domains do not need to be available in the public internet,
+   but have to be resolvable in the local network your SoundTouch boxes run.
+3. Every SoundTouch box needs to be configured to use this api deployment
+   - Collect the local IPs of the SoundTouch boxes (e.g.: 192.168.178.2)
+   - Execute the following shell commands for every IP:
+     - First connect to the service port of the box via
+       ```shell
+       nc 192.168.178.2 17000
+       ```
+     - and then enter
+       ```shell
+       envswitch boseurls set https://ueberboese.your-example-host.org https://ueberboese-downloads.your-example-host.org
+       ```
+4. For spotify auth support additional steps need to be done.
+   - Create an app in the [Spotify dashboard](https://developer.spotify.com/dashboard)
+   - Configure `SPOTIFY_AUTH_CLIENT_ID` and `SPOTIFY_AUTH_CLIENT_SECRET` (see below)
+   - For now the creation `SPOTIFY_AUTH_REFRESH_TOKEN` is manual and bumpy, but hey it works!
 
 ### API Endpoints
 
@@ -61,16 +55,6 @@ The application will be available at `http://localhost:8080`.
 
 ### Docker
 
-#### Local Docker Build
-
-```bash
-# Build Docker image using Spring Boot buildpacks
-mvn spring-boot:build-image
-
-# Run the container (expose both main and management ports)
-docker run -p 8080:8080 -p 8081:8081 ueberboese-api:0.0.1-SNAPSHOT
-```
-
 #### GitHub Container Registry
 
 Docker images are automatically built and pushed to GitHub Container Registry (GHCR) via GitHub Actions:
@@ -82,81 +66,9 @@ Docker images are automatically built and pushed to GitHub Container Registry (G
   - `branch-name` (feature branches)
   - `sha-COMMIT_HASH` (all commits)
 
-### CI/CD Pipeline
-
-The project uses a unified GitHub Actions workflow (`ci-cd.yml`) for continuous integration and deployment with **automatic semantic versioning**:
-
-1. **Semantic Versioning Job**: Calculates version based on conventional commits
-   - Analyzes commit messages following [Conventional Commits](https://www.conventionalcommits.org/)
-   - Determines next semantic version (MAJOR.MINOR.PATCH)
-   - Available for use in subsequent jobs
-
-2. **Test Application Job**: Runs on all pushes and pull requests
-   - Sets up Java 21 with Maven caching
-   - Generates OpenAPI sources
-   - Builds and tests the project with Maven using calculated semantic version
-   - Uploads test results and JAR artifacts
-
-3. **Build & Push Docker Image Job**: Runs on pushes to main/develop branches (not on PRs)
-   - Builds Docker image using Spring Boot buildpacks with semantic version
-   - Pushes to GitHub Container Registry
-   - Tags images with semantic version, commit SHA, and branch-specific tags
-
-#### Required GitHub Settings
-
-For the CI/CD pipeline to work, ensure your GitHub repository has:
-
-1. **Actions enabled**: Go to repository Settings → Actions → General
-2. **Packages permissions**: The workflow uses `GITHUB_TOKEN` with `packages: write` permission (automatically available)
-3. **Container registry access**: No additional secrets needed, uses built-in `GITHUB_TOKEN`
-
-#### Semantic Versioning with Conventional Commits
-
-The project uses [Conventional Commits](https://www.conventionalcommits.org/) for automatic semantic versioning. Commit messages should follow this format:
-
-```
-<type>[optional scope]: <description>
-
-[optional body]
-
-[optional footer(s)]
-```
-
-**Version bumping rules:**
-- `feat:` → Minor version bump (new feature)
-- `fix:` → Patch version bump (bug fix)
-- `BREAKING CHANGE:` or `!` → Major version bump (breaking change)
-- Other types (`docs:`, `style:`, `refactor:`, `test:`, `chore:`) → No version bump
-
-**Examples:**
-```bash
-git commit -m "feat: add user authentication endpoint"     # 1.1.0
-git commit -m "fix: resolve null pointer in proxy service" # 1.0.1
-git commit -m "feat!: change API response format"          # 2.0.0
-git commit -m "docs: update README with new examples"      # No version bump
-```
-
-The calculated semantic version is automatically:
-- Applied to the Maven build (`pom.xml` uses `${revision}`)
-- Used for Docker image tagging in GitHub Container Registry
-- Stored in the built JAR file manifest
-
-#### Running Your Container
-
-After the pipeline runs, pull and run your image:
-
-```bash
-# Login to GHCR (if repository is private)
-echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
-
-# Pull and run the latest image
-docker pull ghcr.io/julius-d/ueberboese-api:latest
-docker run -p 8080:8080 -p 8081:8081 ghcr.io/julius-d/ueberboese-api:latest
-```
-
 #### Docker Compose
 
-For easier deployment and configuration, you can use Docker Compose:
+For deployment and configuration, use Docker Compose:
 
 **docker-compose.yml**:
 ```yaml
@@ -274,18 +186,6 @@ When OAuth is enabled, you must also configure the Spotify API credentials:
 - `SPOTIFY_AUTH_CLIENT_ID` - Your Spotify client ID from the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
 - `SPOTIFY_AUTH_CLIENT_SECRET` - Your Spotify client secret from the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
 - `SPOTIFY_AUTH_REFRESH_TOKEN` - Refresh token
-
-### Testing
-
-The project includes comprehensive tests using REST Assured:
-
-```bash
-# Run all tests
-mvn test
-
-# Run specific test class
-mvn test -Dtest=UeberboeseControllerTest
-```
 
 ### Researching the API
 
