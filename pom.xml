@@ -204,6 +204,9 @@
                                 <include>**/*.sql</include>
                                 <include>**/.gitignore</include>
                             </includes>
+                            <excludes>
+                                <exclude>target/</exclude>
+                            </excludes>
                             <trimTrailingWhitespace/>
                             <endWithNewline/>
                         </format>
