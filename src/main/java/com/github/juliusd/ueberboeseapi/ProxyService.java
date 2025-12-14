@@ -42,11 +42,15 @@ public class ProxyService {
   public ResponseEntity<byte[]> forwardRequest(HttpServletRequest request, String requestBody) {
     String targetUrl = buildTargetUrl(request);
     HttpMethod method = HttpMethod.valueOf(request.getMethod());
+    boolean isSoftwareUpdate = isSoftwareUpdateRequest(request);
 
     log.info("=== PROXY REQUEST START ===");
     log.info("Original URL: {}", request.getRequestURL());
     log.info("Target URL: {}", targetUrl);
     log.info("Method: {}", method);
+    if (isSoftwareUpdate) {
+      log.info("Software Update Request: Will return 404 after logging");
+    }
     if (request.getQueryString() != null) {
       log.info("Content-Type: {}", request.getContentType());
     }
@@ -100,6 +104,12 @@ public class ProxyService {
         log.info("Response Body: {}", responseBodyString);
       }
       log.info("=== PROXY REQUEST END ===");
+
+      // For software update requests, return 404 instead of forwarding the response
+      if (isSoftwareUpdate) {
+        log.info("Returning 404 for software update request");
+        return ResponseEntity.notFound().build();
+      }
 
       // Build response entity
       return ResponseEntity.status(clientResponse.statusCode())

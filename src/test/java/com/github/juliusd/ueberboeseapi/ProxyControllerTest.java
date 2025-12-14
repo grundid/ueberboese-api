@@ -403,7 +403,7 @@ class ProxyControllerTest {
   }
 
   @Test
-  void shouldForwardRequestsToSoftwareUpdateTargetHost() throws Exception {
+  void shouldForwardRequestsToSoftwareUpdateTargetHostButReturn404() throws Exception {
     // Given
     String updateRequestBody =
         """
@@ -425,8 +425,7 @@ class ProxyControllerTest {
                 .header("Host", "downloads.example.org")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(updateRequestBody))
-        .andExpect(status().isOk())
-        .andExpect(content().json("{\"status\": \"update available\"}"));
+        .andExpect(status().isNotFound());
 
     // Verify request went to software update server
     softwareUpdateWireMockServer.verify(
