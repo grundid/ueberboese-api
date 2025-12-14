@@ -136,12 +136,12 @@
                     </excludes>
                     <image>
                         <name>${project.artifactId}:${project.version}</name>
-                        <labels>
-                            <org.opencontainers.image.title>${project.name}</org.opencontainers.image.title>
-                            <org.opencontainers.image.description>API server to keep discontinued devices functional</org.opencontainers.image.description>
-                            <org.opencontainers.image.version>${project.version}</org.opencontainers.image.version>
-                            <org.opencontainers.image.source>https://github.com/julius-d/ueberboese-api</org.opencontainers.image.source>
-                        </labels>
+                        <env>
+                            <BP_OCI_TITLE>${project.name}</BP_OCI_TITLE>
+                            <BP_OCI_DESCRIPTION>API server to keep discontinued devices functional</BP_OCI_DESCRIPTION>
+                            <BP_OCI_VERSION>${project.version}</BP_OCI_VERSION>
+                            <BP_OCI_SOURCE>https://github.com/julius-d/ueberboese-api</BP_OCI_SOURCE>
+                        </env>
                     </image>
                 </configuration>
                 <executions>
