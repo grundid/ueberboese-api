@@ -439,4 +439,72 @@ class UeberboeseControllerTest extends TestBase {
     assert !firstLocation.equals(secondLocation)
         : "Location headers should contain different IDs for separate requests";
   }
+
+  @Test
+  void getRecents_shouldReturnRecentsList() {
+    // language=XML
+    String expectedXml =
+        """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <recents>
+          <recent id="${xmlunit.isNumber}">
+            <contentItemType>tracklisturl</contentItemType>
+            <createdOn>2025-12-13T17:14:28.000+00:00</createdOn>
+            <lastplayedat>${xmlunit.isDateTime}</lastplayedat>
+            <location>/playback/container/c3BvdGlmeTphbGJ1bTowZ3BGWVZNbVV6VkVxeVAyeUh3cEha</location>
+            <name>Ghostsitter 23 - Das Haus im Moor</name>
+            <source id="19989621" type="Audio">
+              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+              <credential type="token_version_3">mockToken123=</credential>
+              <name>mockuser123</name>
+              <sourceproviderid>15</sourceproviderid>
+              <sourcename>mock@example.com</sourcename>
+              <sourceSettings/>
+              <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
+              <username>mockuser123</username>
+            </source>
+            <sourceid>19989621</sourceid>
+            <updatedOn>${xmlunit.isDateTime}</updatedOn>
+          </recent>
+          <recent id="${xmlunit.isNumber}">
+            <contentItemType>stationurl</contentItemType>
+            <createdOn>2018-11-27T18:20:01.000+00:00</createdOn>
+            <lastplayedat>${xmlunit.isDateTime}</lastplayedat>
+            <location>/v1/playback/station/s80044</location>
+            <name>Radio TEDDY</name>
+            <source id="19989313" type="Audio">
+              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+              <credential type="token">eyJmock=</credential>
+              <name/>
+              <sourceproviderid>25</sourceproviderid>
+              <sourcename/>
+              <sourceSettings/>
+              <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
+              <username/>
+            </source>
+            <sourceid>19989313</sourceid>
+            <updatedOn>${xmlunit.isDateTime}</updatedOn>
+          </recent>
+        </recents>""";
+
+    String actualXml =
+        given()
+            .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+            .header("User-agent", "Bose_Lisa/27.0.6")
+            .header("Authorization", "Bearer test-token")
+            .when()
+            .get("/streaming/account/6921042/device/587A628A4042/recents")
+            .then()
+            .statusCode(200)
+            .contentType("application/vnd.bose.streaming-v1.2+xml")
+            .extract()
+            .body()
+            .asString();
+
+    assertThat(
+        actualXml,
+        isSimilarTo(expectedXml)
+            .ignoreWhitespace()
+            .withDifferenceEvaluator(new PlaceholderDifferenceEvaluator()));
+  }
 }

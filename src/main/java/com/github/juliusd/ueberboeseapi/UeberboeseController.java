@@ -4,8 +4,10 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.github.juliusd.ueberboeseapi.generated.DefaultApi;
 import com.github.juliusd.ueberboeseapi.generated.dtos.CredentialApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.FullAccountResponseApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.RecentItemApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.RecentItemRequestApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.RecentItemResponseApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.RecentsContainerApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.SourceApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.SourceProviderApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.SourceProvidersResponseApiDto;
@@ -185,6 +187,97 @@ public class UeberboeseController implements DefaultApi {
           .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
           .build();
     }
+  }
+
+  @Override
+  public ResponseEntity<RecentsContainerApiDto> getRecents(String accountId, String deviceId) {
+
+    RecentsContainerApiDto response = new RecentsContainerApiDto();
+
+    // Create mock recent items
+    response.addRecentItem(
+        createMockRecentItem(
+            "tracklisturl",
+            "Ghostsitter 23 - Das Haus im Moor",
+            "/playback/container/c3BvdGlmeTphbGJ1bTowZ3BGWVZNbVV6VkVxeVAyeUh3cEha",
+            "19989621",
+            "15",
+            "token_version_3",
+            "mockToken123=",
+            "mockuser123",
+            "mock@example.com",
+            OffsetDateTime.parse("2025-12-13T17:14:28.000+00:00")));
+
+    response.addRecentItem(
+        createMockRecentItem(
+            "stationurl",
+            "Radio TEDDY",
+            "/v1/playback/station/s80044",
+            "19989313",
+            "25",
+            "token",
+            "eyJmock=",
+            "",
+            "",
+            OffsetDateTime.parse("2018-11-27T18:20:01.000+00:00")));
+
+    return ResponseEntity.ok()
+        .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        .header(
+            "Access-Control-Allow-Headers",
+            "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization")
+        .header("Access-Control-Expose-Headers", "Authorization")
+        .body(response);
+  }
+
+  private static RecentItemApiDto createMockRecentItem(
+      String contentItemType,
+      String name,
+      String location,
+      String sourceId,
+      String sourceProviderId,
+      String credentialType,
+      String credentialValue,
+      String username,
+      String sourcename,
+      OffsetDateTime createdOn) {
+
+    // Generate unique ID
+    String recentItemId =
+        String.valueOf(ThreadLocalRandom.current().nextLong(1000000000L, 9999999999L));
+
+    // Create credential
+    CredentialApiDto credential = new CredentialApiDto();
+    credential.setType(credentialType);
+    credential.setValue(credentialValue);
+
+    // Create source
+    SourceApiDto source = new SourceApiDto();
+    source.setId(sourceId);
+    source.setType("Audio");
+    source.setCreatedOn(OffsetDateTime.parse("2018-08-11T08:55:41.000+00:00"));
+    source.setCredential(credential);
+    source.setName(username);
+    source.setSourceproviderid(sourceProviderId);
+    source.setSourcename(sourcename);
+    source.setUpdatedOn(OffsetDateTime.parse("2019-07-20T17:48:31.000+00:00"));
+    source.setUsername(username);
+
+    // Create recent item
+    RecentItemApiDto recentItem = new RecentItemApiDto();
+    recentItem.setId(recentItemId);
+    recentItem.setContentItemType(contentItemType);
+    recentItem.setCreatedOn(createdOn);
+    recentItem.setLastplayedat(OffsetDateTime.now());
+    recentItem.setLocation(location);
+    recentItem.setName(name);
+    recentItem.setSource(source);
+    recentItem.setSourceid(sourceId);
+    recentItem.setUpdatedOn(OffsetDateTime.now());
+
+    return recentItem;
   }
 
   private static SourceProviderApiDto createSourceProvider(SourceProvider sourceProvider) {
