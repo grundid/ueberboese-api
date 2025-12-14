@@ -292,6 +292,55 @@ paths:
                 type: string
                 example: getProviderSettings
 
+  /streaming/account/{accountId}/device/{deviceId}/group/:
+    get:
+      summary: Get device group
+      description: >
+        Unclear. Returns always an empty group.
+        What is it used for?
+      operationId: getDeviceGroup
+      tags:
+        - unclear
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: Account identifier
+          schema:
+            type: string
+            example: "6921042"
+        - name: deviceId
+          in: path
+          required: true
+          description: Device identifier
+          schema:
+            type: string
+            example: "587A628A4042"
+      responses:
+        '200':
+          description: Successful response with group information
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/vnd.bose.streaming-v1.2+xml
+          content:
+            application/vnd.bose.streaming-v1.2+xml:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+              example: |
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?><group/>
+        '401':
+          description: Unauthorized - Invalid or missing Bearer token
+        '403':
+          description: Forbidden - Valid token but insufficient permissions
+        '404':
+          description: Not found - Account or device not found
+        '500':
+          description: Internal server error
+
   /oauth/device/{deviceId}/music/musicprovider/{providerId}/token/{tokenType}:
     post:
       summary: Refresh OAuth token
@@ -931,3 +980,9 @@ components:
             $ref: '#/components/schemas/Source'
           xml:
             wrapped: false
+
+    GroupResponse:
+      type: object
+      description: XML response containing group information (typically empty)
+      xml:
+        name: group
