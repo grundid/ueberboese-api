@@ -170,8 +170,6 @@ paths:
       summary: Get full account details
       description: Retrieves complete account information including devices, presets, recents, and sources
       operationId: getFullAccount
-      tags:
-        - experimental
       security:
         - BearerAuth: []
       parameters:

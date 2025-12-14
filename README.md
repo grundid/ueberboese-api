@@ -134,7 +134,6 @@ The application supports the following environment variables:
 | `PROXY_SOFTWARE_UPDATE_TARGET_HOST` | `https://downloads.bose.com`      | Software update target host for requests with Host header containing "downloads"                                   |
 | `UEBERBOESE_DATA_DIRECTORY`         | `/data`                           | Directory for cached account data. **Must be mounted as volume for persistence!**                                  |
 | `UEBERBOESE_OAUTH_ENABLED`          | `false`                           | Enable OAuth token endpoints (set to `true` to activate)                                                           |
-| `UEBERBOESE_EXPERIMENTAL_ENABLED`   | `false`                           | Enable experimental endpoints (set to `true` to activate)                                                          |
 | `SPOTIFY_AUTH_CLIENT_ID`            | -                                 | Spotify API client ID from [developer dashboard](https://developer.spotify.com/dashboard) (required for OAuth)     |
 | `SPOTIFY_AUTH_CLIENT_SECRET`        | -                                 | Spotify API client secret from [developer dashboard](https://developer.spotify.com/dashboard) (required for OAuth) |
 | `SPOTIFY_AUTH_REFRESH_TOKEN`        | -                                 | Spotify refresh token                                                                                              |
