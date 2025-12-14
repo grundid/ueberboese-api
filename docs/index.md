@@ -16,11 +16,11 @@ description: Keep your Bose SoundTouch devices alive
   <h2 class="section-title">The Problem</h2>
   <div style="max-width: 800px; margin: 0 auto;">
     <p style="font-size: 1.25rem; text-align: center; color: var(--color-text-light);">
-      Bose has announced the end of life for its consumer streaming boxes called SoundTouch. 
+      Bose has announced the end of life for its consumer streaming boxes called SoundTouch.
       This will render <strong>millions of completely working streaming boxes useless</strong>.
     </p>
     <p style="text-align: center; margin-top: 2rem;">
-      Despite being fully functional hardware, these devices will stop working when Bose shuts down their streaming API servers. 
+      Despite being fully functional hardware, these devices will stop working when Bose shuts down their streaming API servers.
       This creates unnecessary electronic waste and demonstrates the problem with proprietary cloud-dependent devices.
     </p>
   </div>
@@ -33,7 +33,7 @@ description: Keep your Bose SoundTouch devices alive
       <strong>Überböse</strong> <em>(/ˈyːbɐˌbøːzə/ - German: extremely or supremely evil; beyond ordinary wickedness)</em> 😈
     </p>
     <p style="text-align: center; margin-top: 1.5rem;">
-      This project reverse-engineers and reimplements the Bose streaming HTTP API, giving you control over your devices. 
+      This project reverse-engineers and reimplements the Bose streaming HTTP API, giving you control over your devices.
       Self-host the API, configure your devices once, and keep them running indefinitely.
     </p>
     <ul style="margin-top: 2rem; list-style: none; padding: 0;">

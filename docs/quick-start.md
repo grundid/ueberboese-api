@@ -9,7 +9,7 @@ Follow this guide to deploy Überböse API and configure your Bose SoundTouch de
 
 ## Step 1: Docker Deployment
 
-Create a `docker-compose.yml` file:
+Create a `docker-compose.yml` file (or extend your existing one):
 
 ```yaml
 version: '3.8'
@@ -83,7 +83,7 @@ You need to configure three domains that point to your deployment server:
 - `ueberboeseoauth.your-example-host.org`
 - `ueberboese-downloads.your-example-host.org`
 
-**Important:** Replace `your-example-host.org` with whatever domain you like. 
+**Important:** Replace `your-example-host.org` with whatever domain you like.
 The domains do not need to be available on the public internet,
 but they **must be resolvable** in the local network where your SoundTouch boxes run.
 
@@ -98,7 +98,7 @@ Now you need to configure each SoundTouch device to use your Überböse API depl
 
 ### Find Device IP Addresses
 
-Find the local IP addresses of your SoundTouch devices (e.g., `192.168.178.2`). 
+Find the local IP addresses of your SoundTouch devices (e.g., `192.168.178.2`).
 You can usually find these in your router's admin interface.
 
 ### Configure Each Device
@@ -180,7 +180,7 @@ curl http://localhost:8081/actuator/health
 docker logs ueberboese-api
 
 # View persistent application logs
-tail -f ~/ueberboeselogs/proxy-requests.log
+tail -f ~/ueberboese-logs/proxy-requests.log
 
 # View all logs in real-time
 docker compose logs -f
@@ -201,7 +201,7 @@ docker compose logs -f
 
 #### Permission Issues
 
-- **Ensure volumes are writable:** The directories `~/ueberboese-data` and `~/ueberboeselogs` must be writable by the user running the container
+- **Ensure volumes are writable:** The directories `~/ueberboese-data` and `~/ueberboese-logs` must be writable by the user running the container
 - **Check user/group ID:** Verify `UID` and `GID` environment variables are set correctly
 
 ### Get Help
@@ -231,7 +231,7 @@ docker compose logs -f
 The Docker Compose configuration includes volume mounts that persist data on the host:
 
 - **`~/ueberboese-data`** → `/data` in container (cached account data - REQUIRED)
-- **`~/ueberboeselogs`** → `/workspace/logs` in container (application logs)
+- **`~/ueberboese-logs`** → `/workspace/logs` in container (application logs)
 
 This ensures that both cached data and log files are retained even when containers are stopped, restarted, or updated.
 
@@ -240,7 +240,7 @@ This ensures that both cached data and log files are retained even when containe
 Once your Überböse API is running and devices are configured:
 
 1. **Test playback:** Try playing music through your SoundTouch device
-2. **Monitor logs:** Keep an eye on `~/ueberboeselogs/proxy-requests.log` to see API requests
+2. **Monitor logs:** Keep an eye on `~/ueberboese-logs/proxy-requests.log` to see API requests
 3. **Enable OAuth:** If you want Spotify support, follow Step 4 above
 4. **Contribute:** This is an open-source project - contributions are welcome!
 

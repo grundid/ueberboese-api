@@ -62,7 +62,7 @@ services:
       # REQUIRED: Persist cached account data across container restarts
       - ~/ueberboese-data:/data
       # Persist application logs on the host system
-      - ~/ueberboeselogs:/workspace/logs
+      - ~/ueberboese-logs:/workspace/logs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
@@ -80,7 +80,7 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
 
 # Create required directories on host
 mkdir -p ~/ueberboese-data
-mkdir -p ~/ueberboeselogs
+mkdir -p ~/ueberboese-logs
 
 # Set user ID for proper permissions (Linux/macOS)
 export UID=$(id -u)
@@ -93,7 +93,7 @@ docker compose up -d
 docker compose logs -f ueberboese-api
 
 # View application logs (persistent log files)
-tail -f ~/ueberboeselogs/proxy-requests.log
+tail -f ~/ueberboese-logs/proxy-requests.log
 
 # Stop the services
 docker compose down
@@ -116,7 +116,7 @@ The Docker Compose configuration includes volume mounts that persist data and lo
 - **Permissions**: Container runs as current user (`${UID}:${GID}`) to avoid permission issues
 
 **Application Logs**:
-- **Host path**: `~/ueberboeselogs` (user's home directory)
+- **Host path**: `~/ueberboese-logs` (user's home directory)
 - **Container path**: `/workspace/logs` (where the application writes log files)
 - **Log files**: `proxy-requests.log` and other application logs will be persisted
 - **Permissions**: Container runs as current user (`${UID}:${GID}`) to avoid permission issues
