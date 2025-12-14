@@ -109,31 +109,37 @@ jobs:
         # Build the application and generate SBOM, then create Docker image
         mvn -B package spring-boot:build-image -DskipTests -Drevision=$VERSION
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
     - name: Tag and push Docker image
       id: push-image
       env:
         VERSION: ${{ needs.version.outputs.version || '0.0.0' }}
       run: |
-        # Tag the locally built image with the GHCR name and semantic version
-        docker tag ueberboese-api:$VERSION ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION
-        docker tag ueberboese-api:$VERSION ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
 
-        # Push the version-tagged image
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION
+        # Tag the locally built image with the primary version tag
+        docker tag ueberboese-api:$VERSION $IMAGE_BASE:$VERSION
 
-        # Push the SHA-tagged image
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        # Push the primary version tag (single push creates one image)
+        docker push $IMAGE_BASE:$VERSION
 
-        # Tag and push with branch name if on main
+        # Get the digest of the pushed image
+        DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE_BASE:$VERSION | cut -d'@' -f2)
+        echo "Image digest: $DIGEST"
+
+        # Create additional tags pointing to the same image (no new image created)
+        docker buildx imagetools create --tag $IMAGE_BASE:${{ github.sha }} $IMAGE_BASE@$DIGEST
+
+        # Add latest tag if on main branch
         if [[ "${{ github.ref_name }}" == "main" ]]; then
-          docker tag ueberboese-api:$VERSION ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker buildx imagetools create --tag $IMAGE_BASE:latest $IMAGE_BASE@$DIGEST
         fi
 
-        # Tag and push with branch name if not main
+        # Add branch tag if not on main
         if [[ "${{ github.ref_name }}" != "main" ]]; then
-          docker tag ueberboese-api:$VERSION ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          docker buildx imagetools create --tag $IMAGE_BASE:${{ github.ref_name }} $IMAGE_BASE@$DIGEST
         fi
 
     - name: Get image digest
