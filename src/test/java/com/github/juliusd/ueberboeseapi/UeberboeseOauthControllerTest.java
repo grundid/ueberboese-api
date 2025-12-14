@@ -12,16 +12,16 @@ import static org.mockito.Mockito.when;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyTokenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import se.michaelthelin.spotify.model_objects.credentials.AuthorizationCodeCredentials;
 
 @DirtiesContext
 class UeberboeseOauthControllerTest extends TestBase {
 
-  @MockBean private SpotifyTokenService spotifyTokenService;
-  @MockBean private ProxyService proxyService;
+  @MockitoBean private SpotifyTokenService spotifyTokenService;
+  @MockitoBean private ProxyService proxyService;
 
   @BeforeEach
   void setUpMocks() {
