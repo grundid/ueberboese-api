@@ -1,0 +1,42 @@
+# Site settings
+title: "Überböse API"
+description: "Keep your Bose SoundTouch devices alive"
+url: "https://julius-d.github.io"
+baseurl: "/ueberboese-api"
+repository: "julius-d/ueberboese-api"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  syntax_highlighter: rouge
+  input: GFM
+  hard_wrap: false
+
+# Exclude from build
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - .sass-cache
+  - .jekyll-cache
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# Navigation
+navigation:
+  - title: Home
+    url: /
+  - title: Quick Start
+    url: /quick-start
+  - title: GitHub
+    url: https://github.com/julius-d/ueberboese-api
+    external: true
+
+# SEO settings
+github_username: julius-d
