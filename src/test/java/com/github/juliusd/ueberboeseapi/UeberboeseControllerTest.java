@@ -507,4 +507,148 @@ class UeberboeseControllerTest extends TestBase {
             .ignoreWhitespace()
             .withDifferenceEvaluator(new PlaceholderDifferenceEvaluator()));
   }
+
+  @Test
+  void getPresets_shouldReturnPresetsFromCachedData() {
+    // language=XML
+    String expectedXml =
+        """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <presets>
+          <preset buttonNumber="1">
+            <containerArt>http://example.org/s80044q.png</containerArt>
+            <contentItemType>stationurl</contentItemType>
+            <createdOn>2018-11-26T18:40:45.000+00:00</createdOn>
+            <location>/v1/playback/station/s80044</location>
+            <name>Radio Foobar</name>
+            <source id="19989342" type="Audio">
+              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+              <credential type="token">eyJduTune=</credential>
+              <name/>
+              <sourceproviderid>25</sourceproviderid>
+              <sourcename/>
+              <sourceSettings/>
+              <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
+              <username/>
+            </source>
+            <updatedOn>2018-11-26T18:40:45.000+00:00</updatedOn>
+            <username>Radio Foobar</username>
+          </preset>
+          <preset buttonNumber="2">
+            <containerArt>https://example.org/300/longtext1</containerArt>
+            <contentItemType>tracklisturl</contentItemType>
+            <createdOn>2018-11-26T18:40:45.000+00:00</createdOn>
+            <location>/playback/container/131311232312121212</location>
+            <name>Radio Foobar</name>
+            <source id="19989643" type="Audio">
+              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+              <credential type="token_version_3">token-User1-Spot</credential>
+              <name>user1namespot</name>
+              <sourceproviderid>15</sourceproviderid>
+              <sourcename>user1@example.org</sourcename>
+              <sourceSettings/>
+              <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
+              <username>user1namespot</username>
+            </source>
+            <updatedOn>2018-11-26T18:40:45.000+00:00</updatedOn>
+            <username>Radio Bar</username>
+          </preset>
+          <preset buttonNumber="3">
+            <containerArt>https://example.org/s25111/images/logoq.jpg?t=1</containerArt>
+            <contentItemType>stationurl</contentItemType>
+            <createdOn>2018-11-26T18:40:45.000+00:00</createdOn>
+            <location>/v1/playback/station/s25111</location>
+            <name>radioonetwo</name>
+            <source id="19989342" type="Audio">
+              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+              <credential type="token">eyJduTune=</credential>
+              <name/>
+              <sourceproviderid>25</sourceproviderid>
+              <sourcename/>
+              <sourceSettings/>
+              <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
+              <username/>
+            </source>
+            <updatedOn>2018-11-26T18:40:45.000+00:00</updatedOn>
+            <username>radioeins vom rbb</username>
+          </preset>
+          <preset buttonNumber="4">
+            <containerArt>https://example.org/300/longtext2</containerArt>
+            <contentItemType>tracklisturl</contentItemType>
+            <createdOn>2018-11-26T18:40:45.000+00:00</createdOn>
+            <location>/playback/container/45345349538</location>
+            <name>Kids</name>
+            <source id="19989643" type="Audio">
+              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+              <credential type="token_version_3">token-User1-Spot</credential>
+              <name>user1namespot</name>
+              <sourceproviderid>15</sourceproviderid>
+              <sourcename>user1@example.org</sourcename>
+              <sourceSettings/>
+              <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
+              <username>user1namespot</username>
+            </source>
+            <updatedOn>2018-11-26T18:40:45.000+00:00</updatedOn>
+            <username>Kids</username>
+          </preset>
+          <preset buttonNumber="5">
+            <containerArt/>
+            <contentItemType>tracklisturl</contentItemType>
+            <createdOn>2018-11-26T18:40:45.000+00:00</createdOn>
+            <location>/playback/container/urlssfdfsd</location>
+            <name>Artist Radio</name>
+            <source id="20260226" type="Audio">
+              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+              <credential type="token_version_3">token-User2-Spot</credential>
+              <name>user2namespot</name>
+              <sourceproviderid>15</sourceproviderid>
+              <sourcename>user2@example.org</sourcename>
+              <sourceSettings/>
+              <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
+              <username>user2namespot</username>
+            </source>
+            <updatedOn>2018-11-26T18:40:45.000+00:00</updatedOn>
+            <username>Artist Radio</username>
+          </preset>
+          <preset buttonNumber="6">
+            <containerArt>https://example.org/image/ab67706c0000da843b38733ef58fbd3530776a42</containerArt>
+            <contentItemType>tracklisturl</contentItemType>
+            <createdOn>2018-11-26T18:40:45.000+00:00</createdOn>
+            <location>/playback/container/577667532256ht</location>
+            <name>Komplett Entspannt</name>
+            <source id="19989643" type="Audio">
+              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+              <credential type="token_version_3">token-User1-Spot</credential>
+              <name>user1namespot</name>
+              <sourceproviderid>15</sourceproviderid>
+              <sourcename>user1@example.org</sourcename>
+              <sourceSettings/>
+              <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
+              <username>user1namespot</username>
+            </source>
+            <updatedOn>2018-11-26T18:40:45.000+00:00</updatedOn>
+            <username>Komplett Entspannt</username>
+          </preset>
+        </presets>""";
+
+    String actualXml =
+        given()
+            .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+            .header("User-agent", "Bose_Lisa/27.0.6")
+            .header("Authorization", "Bearer test-token")
+            .when()
+            .get("/streaming/account/6921042/device/123980WER/presets")
+            .then()
+            .statusCode(200)
+            .contentType("application/vnd.bose.streaming-v1.2+xml")
+            .extract()
+            .body()
+            .asString();
+
+    assertThat(
+        actualXml,
+        isSimilarTo(expectedXml)
+            .ignoreWhitespace()
+            .withDifferenceEvaluator(new PlaceholderDifferenceEvaluator()));
+  }
 }

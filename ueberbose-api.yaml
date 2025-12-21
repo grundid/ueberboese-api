@@ -222,6 +222,171 @@ paths:
         '500':
           description: Internal server error
 
+  /streaming/account/{accountId}/device/{deviceId}/presets:
+    get:
+      summary: Get device presets
+      description: Retrieves a list of presets configured for the device
+      operationId: getPresets
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: Account identifier
+          schema:
+            type: string
+            example: "6921042"
+        - name: deviceId
+          in: path
+          required: true
+          description: Device identifier
+          schema:
+            type: string
+            example: "587A628A4042"
+      responses:
+        '200':
+          description: Successful response with list of presets
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/vnd.bose.streaming-v1.2+xml
+            ETag:
+              schema:
+                type: string
+                example: "1736199076279"
+          content:
+            application/vnd.bose.streaming-v1.2+xml:
+              schema:
+                $ref: '#/components/schemas/PresetsContainer'
+              example: |
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <presets>
+                  <preset buttonNumber="1">
+                    <containerArt>http://cdn-radiotime-logos.tunein.com/s80044q.png</containerArt>
+                    <contentItemType>stationurl</contentItemType>
+                    <createdOn>2018-11-26T18:40:45.000+00:00</createdOn>
+                    <location>/v1/playback/station/s80044</location>
+                    <name>Radio TEDDY</name>
+                    <source id="19989313" type="Audio">
+                      <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+                      <credential type="token">eyJzZXJpYWwiOiAiZjUwY2JjZGItN2IxMi00NjJmLWE5ZTctZGEzMTg5NDcwMTU4In0=</credential>
+                      <name></name>
+                      <sourceproviderid>25</sourceproviderid>
+                      <sourcename></sourcename>
+                      <sourceSettings/>
+                      <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
+                      <username></username>
+                    </source>
+                    <updatedOn>2018-11-26T18:40:45.000+00:00</updatedOn>
+                    <username>Radio TEDDY</username>
+                  </preset>
+                  <preset buttonNumber="2">
+                    <containerArt>https://mosaic.scdn.co/300/ab67616d0000b2732a4bc05d6d23b6a9a309e8f8ab67616d0000b2733d3c35cdbf9c51eefeaed7a7ab67616d0000b2738271a54c70aaae53e3da0c09ab67616d0000b273c4ec45569fc2db1edc44a465</containerArt>
+                    <contentItemType>tracklisturl</contentItemType>
+                    <createdOn>2018-11-14T18:27:39.000+00:00</createdOn>
+                    <location>/playback/container/c3BvdGlmeTpwbGF5bGlzdDoyM1NNZHlPSEE2S2t6SG9QT0o1S1E5</location>
+                    <name>Radio Mix</name>
+                    <source id="19989621" type="Audio">
+                      <createdOn>2018-08-11T09:52:31.000+00:00</createdOn>
+                      <credential type="token_version_3">AQCfoupV5pdDJvqVjVdOF5tUOvyB3mKqeUGyZgqSYk4imOvta8p4dJnCHCNZANz-x0O-W2aQ15ML38pyx1CdvNSdOjGPwg0IlYYfPKWgoS07kmdEfRpf1Vur-OIx46KF56pjsA</credential>
+                      <name>mock5zt8py3wuxy123xa431ge</name>
+                      <sourceproviderid>15</sourceproviderid>
+                      <sourcename>user@example.com</sourcename>
+                      <sourceSettings/>
+                      <updatedOn>2018-11-26T18:42:27.000+00:00</updatedOn>
+                      <username>mock5zt8py3wuxy123xa431ge</username>
+                    </source>
+                    <updatedOn>2021-02-21T20:19:16.000+00:00</updatedOn>
+                    <username>Radio Mix</username>
+                  </preset>
+                  <preset buttonNumber="3">
+                    <containerArt>http://cdn-profiles.tunein.com/s25111/images/logoq.jpg?t=1</containerArt>
+                    <contentItemType>stationurl</contentItemType>
+                    <createdOn>2018-11-26T18:41:18.000+00:00</createdOn>
+                    <location>/v1/playback/station/s25111</location>
+                    <name>radioeins vom rbb</name>
+                    <source id="19989313" type="Audio">
+                      <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+                      <credential type="token">eyJzZXJpYWwiOiAiZjUwY2JjZGItN2IxMi00NjJmLWE5ZTctZGEzMTg5NDcwMTU4In0=</credential>
+                      <name></name>
+                      <sourceproviderid>25</sourceproviderid>
+                      <sourcename></sourcename>
+                      <sourceSettings/>
+                      <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
+                      <username></username>
+                    </source>
+                    <updatedOn>2018-11-26T18:41:18.000+00:00</updatedOn>
+                    <username>radioeins vom rbb</username>
+                  </preset>
+                  <preset buttonNumber="4">
+                    <containerArt>https://mosaic.scdn.co/300/ab67616d0000b2735ca387be0b44d742bcee3317ab67616d0000b273627072ee659b0f3aaa0f537aab67616d0000b27364b153e7f4b060d9735c7d76ab67616d0000b2738ba1aaf88b157453fe12482d</containerArt>
+                    <contentItemType>tracklisturl</contentItemType>
+                    <createdOn>2018-11-26T18:47:06.000+00:00</createdOn>
+                    <location>/playback/container/c3BvdGlmeTpwbGF5bGlzdDoyd0JCOGIzUWhDWXd5T0d2dE9id3dI</location>
+                    <name>Saisonal Simone Sommerland</name>
+                    <source id="19989621" type="Audio">
+                      <createdOn>2018-08-11T09:52:31.000+00:00</createdOn>
+                      <credential type="token_version_3">AQCfoupV5pdDJvqVjVdOF5tUOvyB3mKqeUGyZgqSYk4imOvta8p4dJnCHCNZANz-x0O-W2aQ15ML38pyx1CdvNSdOjGPwg0IlYYfPKWgoS07kmdEfRpf1Vur-OIx46KF56pjsA</credential>
+                      <name>mock5zt8py3wuxy123xa431ge</name>
+                      <sourceproviderid>15</sourceproviderid>
+                      <sourcename>user@example.com</sourcename>
+                      <sourceSettings/>
+                      <updatedOn>2018-11-26T18:42:27.000+00:00</updatedOn>
+                      <username>mock5zt8py3wuxy123xa431ge</username>
+                    </source>
+                    <updatedOn>2022-11-17T19:35:37.000+00:00</updatedOn>
+                    <username>Saisonal Simone Sommerland</username>
+                  </preset>
+                  <preset buttonNumber="5">
+                    <containerArt></containerArt>
+                    <contentItemType>tracklisturl</contentItemType>
+                    <createdOn>2018-11-14T18:27:23.000+00:00</createdOn>
+                    <location>/playback/container/c3BvdGlmeTpwbGF5bGlzdDozN2k5ZFFaRjFFNG1zazBURmdzeVRG</location>
+                    <name>Ed Sheeran Radio</name>
+                    <source id="20260226" type="Audio">
+                      <createdOn>2018-09-16T19:18:46.000+00:00</createdOn>
+                      <credential type="token_version_3">AQAHZ3A2USJzLX8CUEUPqIHOPpQihPpwcVO-0h2-g5-7SWRtIFfoQadeVu1Ud0TgVDkee7PyFnJbJUubZkrpv3A9jLaEeY991wSkXGG-EM_IlwvkRpASmwT3nbyixpVkSDw</credential>
+                      <name>bldfvhhzdsyw2d4cy3melcaco</name>
+                      <sourceproviderid>15</sourceproviderid>
+                      <sourcename>otheruser@example.com</sourcename>
+                      <sourceSettings/>
+                      <updatedOn>2019-12-20T14:31:09.000+00:00</updatedOn>
+                      <username>bldfvhhzdsyw2d4cy3melcaco</username>
+                    </source>
+                    <updatedOn>2020-01-26T12:45:13.000+00:00</updatedOn>
+                    <username>Ed Sheeran Radio</username>
+                  </preset>
+                  <preset buttonNumber="6">
+                    <containerArt>https://image-cdn-fa.spotifycdn.com/image/ab67706c0000da843b38733ef58fbd3530776a42</containerArt>
+                    <contentItemType>tracklisturl</contentItemType>
+                    <createdOn>2018-08-11T09:53:48.000+00:00</createdOn>
+                    <location>/playback/container/c3BvdGlmeTpwbGF5bGlzdDoybjZXMnA1QzBNQUQ5YTR6NXhUVDdu</location>
+                    <name>Komplett Entspannt</name>
+                    <source id="19989621" type="Audio">
+                      <createdOn>2018-08-11T09:52:31.000+00:00</createdOn>
+                      <credential type="token_version_3">AQCfoupV5pdDJvqVjVdOF5tUOvyB3mKqeUGyZgqSYk4imOvta8p4dJnCHCNZANz-x0O-W2aQ15ML38pyx1CdvNSdOjGPwg0IlYYfPKWgoS07kmdEfRpf1Vur-OIx46KF56pjsA</credential>
+                      <name>mock5zt8py3wuxy123xa431ge</name>
+                      <sourceproviderid>15</sourceproviderid>
+                      <sourcename>user@example.com</sourcename>
+                      <sourceSettings/>
+                      <updatedOn>2018-11-26T18:42:27.000+00:00</updatedOn>
+                      <username>mock5zt8py3wuxy123xa431ge</username>
+                    </source>
+                    <updatedOn>2025-01-06T21:31:15.000+00:00</updatedOn>
+                    <username>Komplett Entspannt</username>
+                  </preset>
+                </presets>
+        '401':
+          description: Unauthorized - Invalid or missing Bearer token
+        '403':
+          description: Forbidden - Valid token but insufficient permissions
+        '404':
+          description: Not found - Account or device not found
+        '500':
+          description: Internal server error
+
   /streaming/account/{accountId}/full:
     get:
       summary: Get full account details
