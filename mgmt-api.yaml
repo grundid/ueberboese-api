@@ -1,0 +1,171 @@
+openapi: 3.0.3
+info:
+  title: Überböse Management API
+  description: |
+    API endpoints for managing Spotify account authentication and integration
+  version: 1.0.0
+
+paths:
+  /mgmt/spotify/init:
+    post:
+      summary: Initialize Spotify OAuth flow
+      description: |
+        Initiates the Spotify OAuth authentication flow.
+        Returns a redirect URL that should be opened in a browser for the user to authenticate with Spotify.
+        The API will handle the returnUrl automatically if not provided.
+      operationId: initSpotifyAuth
+      tags:
+        - Spotify Management
+      responses:
+        '200':
+          description: Successfully initialized Spotify OAuth flow
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - redirectUrl
+                properties:
+                  redirectUrl:
+                    type: string
+                    format: uri
+                    description: The Spotify OAuth URL that should be opened in a browser
+                    example: "https://accounts.spotify.com/authorize?client_id=xxx&response_type=code&redirect_uri=xxx&scope=user-read-private"
+              examples:
+                success:
+                  summary: Successful response
+                  value:
+                    redirectUrl: "https://accounts.spotify.com/authorize?client_id=abc123&response_type=code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fcallback&scope=user-read-private%20user-read-email"
+        '400':
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidReturnUrl:
+                  summary: Invalid return URL format
+                  value:
+                    error: "Invalid return URL format"
+                    message: "The provided returnUrl is not a valid URI"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                serverError:
+                  summary: Server error
+                  value:
+                    error: "Internal server error"
+                    message: "Failed to initialize Spotify authentication"
+
+  /mgmt/spotify/confirm:
+    post:
+      summary: Confirm Spotify OAuth authentication
+      description: |
+        Completes the Spotify OAuth flow by exchanging the authorization code
+        for access tokens and storing the authenticated Spotify account.
+      operationId: confirmSpotifyAuth
+      tags:
+        - Spotify Management
+      parameters:
+        - name: code
+          in: query
+          required: true
+          description: The authorization code received from Spotify OAuth callback
+          schema:
+            type: string
+            example: "AQBxVGqZ9..."
+      responses:
+        '200':
+          description: Successfully confirmed and stored Spotify authentication
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Spotify account connected successfully"
+                  accountId:
+                    type: string
+                    description: The unique identifier for the connected Spotify account
+                    example: "spotify_user_123"
+              examples:
+                success:
+                  summary: Successful confirmation
+                  value:
+                    success: true
+                    message: "Spotify account connected successfully"
+                    accountId: "spotify_user_abc123"
+        '400':
+          description: Bad request - Invalid or missing authorization code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingCode:
+                  summary: Missing authorization code
+                  value:
+                    error: "Missing parameter"
+                    message: "Authorization code is required"
+                invalidCode:
+                  summary: Invalid authorization code
+                  value:
+                    error: "Invalid code"
+                    message: "The provided authorization code is invalid or expired"
+        '401':
+          description: Unauthorized - Failed to authenticate with Spotify
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                authFailed:
+                  summary: Authentication failed
+                  value:
+                    error: "Authentication failed"
+                    message: "Failed to exchange authorization code with Spotify"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                serverError:
+                  summary: Server error
+                  value:
+                    error: "Internal server error"
+                    message: "Failed to confirm Spotify authentication"
+
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: A short error code or identifier
+          example: "invalid_request"
+        message:
+          type: string
+          description: A human-readable error message
+          example: "The request was invalid"
+        details:
+          type: object
+          description: Additional error details (optional)
+          additionalProperties: true
+
+tags:
+  - name: Spotify Management
+    description: Endpoints for managing Spotify account authentication and integration

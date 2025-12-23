@@ -159,6 +159,7 @@
                 <version>7.13.0</version>
                 <executions>
                     <execution>
+                        <id>generate-streaming-api</id>
                         <goals>
                             <goal>generate</goal>
                         </goals>
@@ -179,6 +180,30 @@
                                 <hideGenerationTimestamp>true</hideGenerationTimestamp>
                                 <modelPackage>com.github.juliusd.ueberboeseapi.generated.dtos</modelPackage>
                                 <withXml>true</withXml>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-mgmt-api</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <generatorName>spring</generatorName>
+                            <modelNameSuffix>ApiDto</modelNameSuffix>
+                            <generateSupportingFiles>false</generateSupportingFiles>
+                            <inputSpec>${project.basedir}/mgmt-api.yaml</inputSpec>
+                            <apiPackage>com.github.juliusd.ueberboeseapi.generated.mgmt</apiPackage>
+                            <skipIfSpecIsUnchanged>true</skipIfSpecIsUnchanged>
+                            <templateDirectory>${project.basedir}/src/main/resources/templates/spring</templateDirectory>
+                            <configOptions>
+                                <useTags>true</useTags>
+                                <dateLibrary>java8</dateLibrary>
+                                <interfaceOnly>true</interfaceOnly>
+                                <useSpringBoot3>true</useSpringBoot3>
+                                <skipDefaultInterface>true</skipDefaultInterface>
+                                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+                                <modelPackage>com.github.juliusd.ueberboeseapi.generated.mgmt.dtos</modelPackage>
                             </configOptions>
                         </configuration>
                     </execution>
