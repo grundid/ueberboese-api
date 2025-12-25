@@ -187,6 +187,54 @@ paths:
                     error: "Internal server error"
                     message: "Failed to retrieve Spotify accounts"
 
+  /mgmt/accounts/{accountId}/speakers:
+    get:
+      summary: List speakers for an account
+      description: |
+        Retrieves a list of speakers (devices) associated with an account.
+        Returns the IP address for each speaker found in the account data.
+      operationId: listSpeakers
+      tags:
+        - Account Management
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: The account ID to retrieve speakers for
+          schema:
+            type: string
+            example: "6921042"
+      responses:
+        '200':
+          description: Successfully retrieved list of speakers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSpeakers200Response'
+              examples:
+                withSpeakers:
+                  summary: Response with multiple speakers
+                  value:
+                    speakers:
+                      - ipAddress: "192.168.1.100"
+                      - ipAddress: "192.168.1.101"
+                emptyList:
+                  summary: Response with no speakers
+                  value:
+                    speakers: []
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  summary: Account not found
+                  value:
+                    error: "Not found"
+                    message: "Account data not found for the specified account ID"
+
 components:
   schemas:
     Error:
@@ -235,6 +283,29 @@ components:
           items:
             $ref: '#/components/schemas/SpotifyAccountListItem'
 
+    Speaker:
+      type: object
+      required:
+        - ipAddress
+      properties:
+        ipAddress:
+          type: string
+          description: IP address of the speaker
+          example: "192.168.1.100"
+
+    ListSpeakers200Response:
+      type: object
+      required:
+        - speakers
+      properties:
+        speakers:
+          type: array
+          description: List of speakers/devices
+          items:
+            $ref: '#/components/schemas/Speaker'
+
 tags:
   - name: Spotify Management
     description: Endpoints for managing Spotify account authentication and integration
+  - name: Account Management
+    description: Endpoints for managing account data and devices
