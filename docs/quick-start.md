@@ -135,7 +135,7 @@ If you want to use Spotify with your SoundTouch devices, follow these additional
    - **Redirect URIs**: `ueberboese-login://spotify`
    - Bundle IDs: blank, not needed
    - Android packages: blank, not needed
-   - **APIs used**: 
+   - **APIs used**:
      - Web API
      - Web Playback SDK
 
