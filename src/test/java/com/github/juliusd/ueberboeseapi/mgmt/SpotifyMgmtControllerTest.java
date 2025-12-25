@@ -32,6 +32,8 @@ class SpotifyMgmtControllerTest extends TestBase {
 
     // When / Then
     given()
+        .auth()
+        .basic("admin", "test-password-123")
         .header("Content-Type", "application/json")
         .accept(ContentType.JSON)
         .when()
@@ -53,6 +55,8 @@ class SpotifyMgmtControllerTest extends TestBase {
 
     // When / Then
     given()
+        .auth()
+        .basic("admin", "test-password-123")
         .header("Content-Type", "application/json")
         .queryParam("code", authCode)
         .when()
@@ -70,6 +74,8 @@ class SpotifyMgmtControllerTest extends TestBase {
     // When / Then - missing code parameter
     // Spring will return 400 automatically for missing required parameter
     given()
+        .auth()
+        .basic("admin", "test-password-123")
         .header("Content-Type", "application/json")
         .when()
         .post("/mgmt/spotify/confirm")
@@ -82,6 +88,8 @@ class SpotifyMgmtControllerTest extends TestBase {
   void confirmSpotifyAuth_shouldRequireNonEmptyCode() {
     // When / Then - empty code parameter
     given()
+        .auth()
+        .basic("admin", "test-password-123")
         .header("Content-Type", "application/json")
         .queryParam("code", "")
         .when()
@@ -105,6 +113,8 @@ class SpotifyMgmtControllerTest extends TestBase {
 
     // When / Then
     given()
+        .auth()
+        .basic("admin", "test-password-123")
         .header("Content-Type", "application/json")
         .queryParam("code", invalidCode)
         .when()
@@ -128,6 +138,8 @@ class SpotifyMgmtControllerTest extends TestBase {
 
     // When / Then
     given()
+        .auth()
+        .basic("admin", "test-password-123")
         .header("Content-Type", "application/json")
         .queryParam("code", authCode)
         .when()
@@ -147,6 +159,8 @@ class SpotifyMgmtControllerTest extends TestBase {
 
     // When / Then
     given()
+        .auth()
+        .basic("admin", "test-password-123")
         .header("Content-Type", "application/json")
         .when()
         .post("/mgmt/spotify/init")
@@ -168,6 +182,8 @@ class SpotifyMgmtControllerTest extends TestBase {
 
     // When / Then
     given()
+        .auth()
+        .basic("admin", "test-password-123")
         .header("Content-Type", "application/json")
         .queryParam("code", authCode)
         .when()
@@ -198,6 +214,8 @@ class SpotifyMgmtControllerTest extends TestBase {
 
     // When / Then
     given()
+        .auth()
+        .basic("admin", "test-password-123")
         .header("Content-Type", "application/json")
         .when()
         .get("/mgmt/spotify/accounts")
@@ -223,6 +241,8 @@ class SpotifyMgmtControllerTest extends TestBase {
 
     // When / Then
     given()
+        .auth()
+        .basic("admin", "test-password-123")
         .header("Content-Type", "application/json")
         .when()
         .get("/mgmt/spotify/accounts")
@@ -241,6 +261,8 @@ class SpotifyMgmtControllerTest extends TestBase {
 
     // When / Then
     given()
+        .auth()
+        .basic("admin", "test-password-123")
         .header("Content-Type", "application/json")
         .when()
         .get("/mgmt/spotify/accounts")
@@ -249,5 +271,29 @@ class SpotifyMgmtControllerTest extends TestBase {
         .contentType("application/json")
         .body("error", equalTo("Internal server error"))
         .body("message", notNullValue());
+  }
+
+  @Test
+  void mgmtEndpoints_shouldRequireAuthentication() {
+    // Verify that requests without authentication are rejected with 401
+    given()
+        .header("Content-Type", "application/json")
+        .when()
+        .post("/mgmt/spotify/init")
+        .then()
+        .statusCode(401);
+  }
+
+  @Test
+  void mgmtEndpoints_shouldRejectInvalidCredentials() {
+    // Verify that requests with wrong credentials are rejected with 401
+    given()
+        .auth()
+        .basic("wrong", "credentials")
+        .header("Content-Type", "application/json")
+        .when()
+        .post("/mgmt/spotify/init")
+        .then()
+        .statusCode(401);
   }
 }

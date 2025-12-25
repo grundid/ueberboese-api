@@ -29,6 +29,9 @@ services:
       - SPOTIFY_AUTH_CLIENT_ID=your-spotify-client-id
       - SPOTIFY_AUTH_CLIENT_SECRET=your-spotify-client-secret
       - SPOTIFY_AUTH_REFRESH_TOKEN=your-spotify-refresh-token
+      # Management API Basic Auth credentials (change these!)
+      - UEBERBOESE_MGMT_USERNAME=admin
+      - UEBERBOESE_MGMT_PASSWORD=your-secure-password
     volumes:
       # REQUIRED: Persist cached account data across container restarts
       - ~/ueberboese-data:/data
@@ -230,6 +233,8 @@ docker compose logs -f
 | `PROXY_SOFTWARE_UPDATE_TARGET_HOST` | `https://downloads.bose.com`      | Software update target host for requests with Host header containing "downloads" |
 | `UEBERBOESE_DATA_DIRECTORY`         | `/data`                           | Directory for cached account data (must be mounted as volume!)                   |
 | `UEBERBOESE_OAUTH_ENABLED`          | `false`                           | Enable OAuth token endpoints (set to `true` to activate)                         |
+| `UEBERBOESE_MGMT_USERNAME`          | `admin`                           | Username for Basic Auth on `/mgmt/**` endpoints                                  |
+| `UEBERBOESE_MGMT_PASSWORD`          | `change_me!`                      | Password for Basic Auth on `/mgmt/**` endpoints (change this!)                   |
 | `SPOTIFY_AUTH_CLIENT_ID`            | -                                 | Spotify API client ID from developer dashboard (required for OAuth)              |
 | `SPOTIFY_AUTH_CLIENT_SECRET`        | -                                 | Spotify API client secret from developer dashboard (required for OAuth)          |
 | `SPOTIFY_AUTH_REFRESH_TOKEN`        | -                                 | Spotify refresh token                                                            |
