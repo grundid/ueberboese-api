@@ -149,7 +149,7 @@ paths:
     post:
       summary: Get Spotify entity information
       description: |
-        Retrieves name and image URL for a Spotify entity (track, album, artist, or playlist).
+        Retrieves name and image URL for a Spotify entity (track, album, artist, playlist, show, or episode).
         Accepts a Spotify URI and returns the entity's display name and a medium-sized image URL.
       operationId: getSpotifyEntity
       tags:
@@ -184,6 +184,14 @@ paths:
                 summary: Playlist URI
                 value:
                   uri: "spotify:playlist:37i9dQZF1DXcBWIGoYBM5M"
+              show:
+                summary: Show URI
+                value:
+                  uri: "spotify:show:69wo5hkrxkuP7O6EMMFsaT"
+              episode:
+                summary: Episode URI
+                value:
+                  uri: "spotify:episode:512ojhOuo1ktJprKbVcKyQ"
       responses:
         '200':
           description: Successfully retrieved entity information
@@ -229,7 +237,7 @@ paths:
                   summary: Unsupported entity type
                   value:
                     error: "Unsupported entity type"
-                    message: "Only track, album, artist, and playlist URIs are supported"
+                    message: "Only track, album, artist, playlist, show, and episode URIs are supported"
         '404':
           description: Entity not found
           content:

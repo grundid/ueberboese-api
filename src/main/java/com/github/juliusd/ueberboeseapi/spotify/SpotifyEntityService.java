@@ -11,8 +11,10 @@ import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 import se.michaelthelin.spotify.model_objects.specification.Album;
 import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Artist;
+import se.michaelthelin.spotify.model_objects.specification.Episode;
 import se.michaelthelin.spotify.model_objects.specification.Image;
 import se.michaelthelin.spotify.model_objects.specification.Playlist;
+import se.michaelthelin.spotify.model_objects.specification.Show;
 import se.michaelthelin.spotify.model_objects.specification.Track;
 
 @Service
@@ -42,11 +44,13 @@ public class SpotifyEntityService {
         case "album" -> getAlbumInfo(spotifyApi, spotifyUri.id());
         case "artist" -> getArtistInfo(spotifyApi, spotifyUri.id());
         case "playlist" -> getPlaylistInfo(spotifyApi, spotifyUri.id());
+        case "show" -> getShowInfo(spotifyApi, spotifyUri.id());
+        case "episode" -> getEpisodeInfo(spotifyApi, spotifyUri.id());
         default ->
             throw new InvalidSpotifyUriException(
                 "Unsupported entity type: "
                     + spotifyUri.type()
-                    + ". Supported types: track, album, artist, playlist");
+                    + ". Supported types: track, album, artist, playlist, show, episode");
       };
     } catch (IOException | SpotifyWebApiException | ParseException e) {
       log.error("Failed to fetch Spotify entity: {}", e.getMessage(), e);
@@ -166,6 +170,36 @@ public class SpotifyEntityService {
     }
 
     log.info("Found playlist: {} with image: {}", name, imageUrl);
+    return new SpotifyEntityInfo(name, imageUrl);
+  }
+
+  private SpotifyEntityInfo getShowInfo(SpotifyApi spotifyApi, String showId)
+      throws IOException, SpotifyWebApiException, ParseException {
+    Show show = spotifyApi.getShow(showId).build().execute();
+
+    String name = show.getName();
+    String imageUrl = null;
+
+    if (show.getImages() != null && show.getImages().length > 0) {
+      imageUrl = selectMediumImage(show.getImages());
+    }
+
+    log.info("Found show: {} with image: {}", name, imageUrl);
+    return new SpotifyEntityInfo(name, imageUrl);
+  }
+
+  private SpotifyEntityInfo getEpisodeInfo(SpotifyApi spotifyApi, String episodeId)
+      throws IOException, SpotifyWebApiException, ParseException {
+    Episode episode = spotifyApi.getEpisode(episodeId).build().execute();
+
+    String name = episode.getName();
+    String imageUrl = null;
+
+    if (episode.getImages() != null && episode.getImages().length > 0) {
+      imageUrl = selectMediumImage(episode.getImages());
+    }
+
+    log.info("Found episode: {} with image: {}", name, imageUrl);
     return new SpotifyEntityInfo(name, imageUrl);
   }
 

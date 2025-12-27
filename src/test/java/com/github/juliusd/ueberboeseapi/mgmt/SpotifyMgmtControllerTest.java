@@ -401,6 +401,68 @@ class SpotifyMgmtControllerTest extends TestBase {
   }
 
   @Test
+  void getSpotifyEntity_shouldReturnEntityInfoForShow() {
+    // Given
+    String uri = "spotify:show:123456rty0";
+    SpotifyEntityService.SpotifyEntityInfo mockInfo =
+        new SpotifyEntityService.SpotifyEntityInfo(
+            "A nice podcast", "https://i.scdn.co/image/show.jpg");
+
+    when(spotifyEntityService.getEntityInfo(uri)).thenReturn(mockInfo);
+
+    // When / Then
+    given()
+        .auth()
+        .basic("admin", "test-password-123")
+        .header("Content-Type", "application/json")
+        .body(
+            """
+              {
+                "uri": "%s"
+              }
+              """
+                .formatted(uri))
+        .when()
+        .post("/mgmt/spotify/entity")
+        .then()
+        .statusCode(200)
+        .contentType("application/json")
+        .body("name", equalTo("A nice podcast"))
+        .body("imageUrl", equalTo("https://i.scdn.co/image/show.jpg"));
+  }
+
+  @Test
+  void getSpotifyEntity_shouldReturnEntityInfoForEpisode() {
+    // Given
+    String uri = "spotify:episode:512ojhOuo1ktJprKbVcKyQ";
+    SpotifyEntityService.SpotifyEntityInfo mockInfo =
+        new SpotifyEntityService.SpotifyEntityInfo(
+            "Episode 42: The Answer", "https://i.scdn.co/image/episode.jpg");
+
+    when(spotifyEntityService.getEntityInfo(uri)).thenReturn(mockInfo);
+
+    // When / Then
+    given()
+        .auth()
+        .basic("admin", "test-password-123")
+        .header("Content-Type", "application/json")
+        .body(
+            """
+              {
+                "uri": "%s"
+              }
+              """
+                .formatted(uri))
+        .when()
+        .post("/mgmt/spotify/entity")
+        .then()
+        .statusCode(200)
+        .contentType("application/json")
+        .body("name", equalTo("Episode 42: The Answer"))
+        .body("imageUrl", equalTo("https://i.scdn.co/image/episode.jpg"));
+  }
+
+  @Test
   void getSpotifyEntity_shouldReturnNullImageUrlWhenNoImageAvailable() {
     // Given
     String uri = "spotify:playlist:37i9dQZF1DXcBWIGoYBM5M";
@@ -450,12 +512,12 @@ class SpotifyMgmtControllerTest extends TestBase {
   @Test
   void getSpotifyEntity_shouldReturn400ForUnsupportedEntityType() {
     // Given
-    String unsupportedUri = "spotify:show:12345";
+    String unsupportedUri = "spotify:audiobook:12345";
 
     when(spotifyEntityService.getEntityInfo(unsupportedUri))
         .thenThrow(
             new InvalidSpotifyUriException(
-                "Unsupported entity type: show. Supported types: track, album, artist, playlist"));
+                "Unsupported entity type: audiobook. Supported types: track, album, artist, playlist, show, episode"));
 
     // When / Then
     given()
