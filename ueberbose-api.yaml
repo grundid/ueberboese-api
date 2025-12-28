@@ -56,20 +56,8 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: accountId
-          in: path
-          required: true
-          description: Account identifier
-          schema:
-            type: string
-            example: "6921042"
-        - name: deviceId
-          in: path
-          required: true
-          description: Device identifier
-          schema:
-            type: string
-            example: "587A628A4042"
+        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/deviceId'
       requestBody:
         required: true
         content:
@@ -141,20 +129,8 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: accountId
-          in: path
-          required: true
-          description: Account identifier
-          schema:
-            type: string
-            example: "6921042"
-        - name: deviceId
-          in: path
-          required: true
-          description: Device identifier
-          schema:
-            type: string
-            example: "587A628A4042"
+        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/deviceId'
       responses:
         '200':
           description: Successful response with list of recent items
@@ -230,20 +206,8 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: accountId
-          in: path
-          required: true
-          description: Account identifier
-          schema:
-            type: string
-            example: "6921042"
-        - name: deviceId
-          in: path
-          required: true
-          description: Device identifier
-          schema:
-            type: string
-            example: "587A628A4042"
+        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/deviceId'
       responses:
         '200':
           description: Successful response with list of presets
@@ -397,20 +361,8 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: accountId
-          in: path
-          required: true
-          description: Account identifier
-          schema:
-            type: string
-            example: "6921042"
-        - name: deviceId
-          in: path
-          required: true
-          description: Device identifier
-          schema:
-            type: string
-            example: "587A628A4042"
+        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/deviceId'
         - name: presetNumber
           in: path
           required: true
@@ -486,13 +438,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: accountId
-          in: path
-          required: true
-          description: Account identifier
-          schema:
-            type: string
-            example: "6921042"
+        - $ref: '#/components/parameters/accountId'
       responses:
         '200':
           description: Successful response with full account details
@@ -528,13 +474,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: accountId
-          in: path
-          required: true
-          description: Account identifier
-          schema:
-            type: string
-            example: "6921042"
+        - $ref: '#/components/parameters/accountId'
       responses:
         '200':
           description: Unclear, empty response
@@ -624,20 +564,8 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: accountId
-          in: path
-          required: true
-          description: Account identifier
-          schema:
-            type: string
-            example: "6921042"
-        - name: deviceId
-          in: path
-          required: true
-          description: Device identifier
-          schema:
-            type: string
-            example: "587A628A4042"
+        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/deviceId'
       responses:
         '200':
           description: Successful response with group information
@@ -749,13 +677,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: accountId
-          in: path
-          required: true
-          description: Account identifier
-          schema:
-            type: string
-            example: "6921042"
+        - $ref: '#/components/parameters/accountId'
       responses:
         '200':
           description: Successful response with software update information
@@ -789,6 +711,25 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: Bearer token authentication
+
+  parameters:
+    accountId:
+      name: accountId
+      in: path
+      required: true
+      description: Account identifier
+      schema:
+        type: string
+        example: "6921042"
+
+    deviceId:
+      name: deviceId
+      in: path
+      required: true
+      description: Device identifier
+      schema:
+        type: string
+        example: "587A628A4042"
 
   schemas:
     SourceProvidersResponse:
