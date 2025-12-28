@@ -387,6 +387,97 @@ paths:
         '500':
           description: Internal server error
 
+  /streaming/account/{accountId}/device/{deviceId}/preset/{presetNumber}:
+    put:
+      summary: Update device preset
+      description: Updates or creates a preset for a specific button number on the device
+      operationId: updatePreset
+      tags:
+        - experimental
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: Account identifier
+          schema:
+            type: string
+            example: "6921042"
+        - name: deviceId
+          in: path
+          required: true
+          description: Device identifier
+          schema:
+            type: string
+            example: "587A628A4042"
+        - name: presetNumber
+          in: path
+          required: true
+          description: Preset button number (1-6)
+          schema:
+            type: integer
+            example: 2
+      requestBody:
+        required: true
+        content:
+          application/vnd.bose.streaming-v1.2+xml:
+            schema:
+              $ref: '#/components/schemas/PresetUpdateRequest'
+            example: |
+              <?xml version="1.0" encoding="UTF-8" ?>
+              <preset buttonNumber="2">
+                <sourceid>19989621</sourceid>
+                <name>Radio Mix</name>
+                <username>Radio Mix</username>
+                <location>/playback/container/c3BvdGlmeTpwbGF5bGlzdDoyM1NNZHlPSEE2S2t6SG9QT0o1S1E5</location>
+                <contentItemType>tracklisturl</contentItemType>
+                <containerArt>https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da84993ee084406c4089ad8f4b2a</containerArt>
+              </preset>
+      responses:
+        '200':
+          description: Preset updated successfully
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/vnd.bose.streaming-v1.2+xml
+            Location:
+              schema:
+                type: string
+                example: http://streamingqa.bose.com/account/6921042/device/587A628A4042/preset/2
+          content:
+            application/vnd.bose.streaming-v1.2+xml:
+              schema:
+                $ref: '#/components/schemas/PresetUpdateResponse'
+              example: |
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <preset buttonNumber="2">
+                  <containerArt>https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da84993ee084406c4089ad8f4b2a</containerArt>
+                  <contentItemType>tracklisturl</contentItemType>
+                  <createdOn>2018-11-14T18:27:39.000+00:00</createdOn>
+                  <location>/playback/container/c3BvdGlmeTpwbGF5bGlzdDoyM1NNZHlPSEE2S2t6SG9QT0o1S1E5</location>
+                  <name>Radio Mix</name>
+                  <source id="19989621" type="Audio">
+                    <createdOn>2018-08-11T09:52:31.000+00:00</createdOn>
+                    <credential type="token_version_3">mockToken456xyz=</credential>
+                    <name>mockuser5zt8py3wuxy123</name>
+                    <sourceproviderid>15</sourceproviderid>
+                    <sourcename>user@example.com</sourcename>
+                    <sourceSettings/>
+                    <updatedOn>2018-11-26T18:42:27.000+00:00</updatedOn>
+                    <username>mockuser5zt8py3wuxy123</username>
+                  </source>
+                  <updatedOn>2025-12-28T16:38:41.000+00:00</updatedOn>
+                  <username>Radio Mix</username>
+                </preset>
+        '400':
+          description: Bad request - Invalid request body or parameters
+        '404':
+          description: Not found - Account or device not found
+        '500':
+          description: Internal server error
+
   /streaming/account/{accountId}/full:
     get:
       summary: Get full account details
@@ -1127,6 +1218,106 @@ components:
         username:
           type: string
           example: "Radio Foobar"
+
+    PresetUpdateRequest:
+      type: object
+      description: Request body for updating a preset
+      xml:
+        name: preset
+      required:
+        - buttonNumber
+        - sourceid
+        - name
+        - username
+        - location
+        - contentItemType
+        - containerArt
+      properties:
+        buttonNumber:
+          type: integer
+          description: Button number for the preset
+          xml:
+            attribute: true
+          example: 2
+        sourceid:
+          type: string
+          description: Identifier of the source
+          example: "19989621"
+        name:
+          type: string
+          description: Name of the preset
+          example: "Radio Mix"
+        username:
+          type: string
+          description: Username associated with the preset
+          example: "Radio Mix"
+        location:
+          type: string
+          description: Location/path of the content
+          example: "/playback/container/c3BvdGlmeTpwbGF5bGlzdDoyM1NNZHlPSEE2S2t6SG9QT0o1S1E5"
+        contentItemType:
+          type: string
+          description: Type of content item
+          example: "tracklisturl"
+        containerArt:
+          type: string
+          description: URL to the container art
+          example: "https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da84993ee084406c4089ad8f4b2a"
+
+    PresetUpdateResponse:
+      type: object
+      description: XML response containing updated preset details
+      xml:
+        name: preset
+      required:
+        - buttonNumber
+        - containerArt
+        - contentItemType
+        - createdOn
+        - location
+        - name
+        - source
+        - updatedOn
+        - username
+      properties:
+        buttonNumber:
+          type: integer
+          description: Button number for the preset
+          xml:
+            attribute: true
+          example: 2
+        containerArt:
+          type: string
+          description: URL to the container art
+          example: "https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da84993ee084406c4089ad8f4b2a"
+        contentItemType:
+          type: string
+          description: Type of content item
+          example: "tracklisturl"
+        createdOn:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the preset was created
+          example: "2018-11-14T18:27:39.000+00:00"
+        location:
+          type: string
+          description: Location/path of the content
+          example: "/playback/container/c3BvdGlmeTpwbGF5bGlzdDoyM1NNZHlPSEE2S2t6SG9QT0o1S1E5"
+        name:
+          type: string
+          description: Name of the preset
+          example: "Radio Mix"
+        source:
+          $ref: '#/components/schemas/Source'
+        updatedOn:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the preset was last updated
+          example: "2025-12-28T16:38:41.000+00:00"
+        username:
+          type: string
+          description: Username associated with the preset
+          example: "Radio Mix"
 
     RecentsContainer:
       type: object

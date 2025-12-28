@@ -623,4 +623,71 @@ class UeberboeseExperimentalControllerTest extends TestBase {
     // Cleanup - remove test cache file
     Files.deleteIfExists(cacheFile);
   }
+
+  @Test
+  void updatePreset_shouldUpdatePresetSuccessfully() {
+    // language=XML
+    String requestXml =
+        """
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <preset buttonNumber="2">
+          <sourceid>19989621</sourceid>
+          <name>Radio Mix</name>
+          <username>Radio Mix</username>
+          <location>/playback/container/c3BvdGlmeTpwbGF5bGlzdDoyM1NNZHlPSEE2S2t6SG9QT0o1S1E5</location>
+          <contentItemType>tracklisturl</contentItemType>
+          <containerArt>https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da84993ee084406c4089ad8f4b2a</containerArt>
+        </preset>""";
+
+    // Extract the response for XML comparison
+    String actualXml =
+        given()
+            .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+            .header("User-agent", "Bose_Lisa/27.0.6")
+            .header("Authorization", "Bearer mockToken123")
+            .header("Content-type", "application/vnd.bose.streaming-v1.2+xml")
+            .body(requestXml)
+            .when()
+            .put("/streaming/account/6921042/device/587A628A4042/preset/2")
+            .then()
+            .statusCode(200)
+            .contentType("application/vnd.bose.streaming-v1.2+xml")
+            .header(
+                "Location",
+                containsString(
+                    "http://streamingqa.bose.com/account/6921042/device/587A628A4042/preset/2"))
+            .extract()
+            .body()
+            .asString();
+
+    // language=XML
+    String expectedXml =
+        """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <preset buttonNumber="2">
+          <containerArt>https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da84993ee084406c4089ad8f4b2a</containerArt>
+          <contentItemType>tracklisturl</contentItemType>
+          <createdOn>2018-11-14T18:27:39.000+00:00</createdOn>
+          <location>/playback/container/c3BvdGlmeTpwbGF5bGlzdDoyM1NNZHlPSEE2S2t6SG9QT0o1S1E5</location>
+          <name>Radio Mix</name>
+          <source id="19989621" type="Audio">
+            <createdOn>2018-08-11T09:52:31.000+00:00</createdOn>
+            <credential type="token_version_3">mockToken456xyz=</credential>
+            <name>mockuser5zt8py3wuxy123</name>
+            <sourceproviderid>15</sourceproviderid>
+            <sourcename>user@example.com</sourcename>
+            <sourceSettings/>
+            <updatedOn>2018-11-26T18:42:27.000+00:00</updatedOn>
+            <username>mockuser5zt8py3wuxy123</username>
+          </source>
+          <updatedOn>2025-12-28T16:38:41.000+00:00</updatedOn>
+          <username>Radio Mix</username>
+        </preset>""";
+
+    assertThat(
+        actualXml,
+        isSimilarTo(expectedXml)
+            .ignoreWhitespace()
+            .withDifferenceEvaluator(new PlaceholderDifferenceEvaluator()));
+  }
 }
