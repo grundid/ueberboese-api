@@ -23,7 +23,7 @@ class AccountDataServiceTest {
   @BeforeEach
   void setUp() {
     XmlMessageConverterConfig config = new XmlMessageConverterConfig();
-    xmlMapper = config.xmlMapper();
+    xmlMapper = config.customXmlMapper();
     DataDirectoryProperties properties = new DataDirectoryProperties(tempDir.toString());
     accountDataService = new AccountDataService(xmlMapper, properties);
   }
@@ -42,7 +42,7 @@ class AccountDataServiceTest {
         </account>
         """;
 
-    String filename = String.format("streaming-account-full-%s.xml", accountId);
+    String filename = "streaming-account-full-%s.xml".formatted(accountId);
     Path filePath = tempDir.resolve(filename);
     Files.writeString(filePath, xmlContent);
 
@@ -78,7 +78,7 @@ class AccountDataServiceTest {
   void loadFullAccountData_shouldThrowIOExceptionWhenFileIsNotReadable() throws IOException {
     // Given
     String accountId = "unreadable";
-    String filename = String.format("streaming-account-full-%s.xml", accountId);
+    String filename = "streaming-account-full-%s.xml".formatted(accountId);
     Path filePath = tempDir.resolve(filename);
 
     // Create file but make it unreadable (this test might not work on all systems)
@@ -109,7 +109,7 @@ class AccountDataServiceTest {
     String accountId = "invalid";
     String invalidXml = "<invalid><unclosed-tag></invalid>";
 
-    String filename = String.format("streaming-account-full-%s.xml", accountId);
+    String filename = "streaming-account-full-%s.xml".formatted(accountId);
     Path filePath = tempDir.resolve(filename);
     Files.writeString(filePath, invalidXml);
 
@@ -128,7 +128,7 @@ class AccountDataServiceTest {
   void hasAccountData_shouldReturnTrueWhenFileExists() throws IOException {
     // Given
     String accountId = "existing";
-    String filename = String.format("streaming-account-full-%s.xml", accountId);
+    String filename = "streaming-account-full-%s.xml".formatted(accountId);
     Path filePath = tempDir.resolve(filename);
     Files.writeString(filePath, "<account></account>");
 
@@ -183,7 +183,7 @@ class AccountDataServiceTest {
         </account>
         """;
 
-    String filename = String.format("streaming-account-full-%s.xml", accountId);
+    String filename = "streaming-account-full-%s.xml".formatted(accountId);
     Path filePath = tempDir.resolve(filename);
     Files.writeString(filePath, complexXml);
 
@@ -226,7 +226,7 @@ class AccountDataServiceTest {
     accountDataService.saveFullAccountData(accountId, accountData);
 
     // Then
-    String filename = String.format("streaming-account-full-%s.xml", accountId);
+    String filename = "streaming-account-full-%s.xml".formatted(accountId);
     Path filePath = tempDir.resolve(filename);
 
     assertTrue(Files.exists(filePath), "File should be created");
@@ -255,7 +255,7 @@ class AccountDataServiceTest {
     nestedService.saveFullAccountData(accountId, accountData);
 
     // Then
-    String filename = String.format("streaming-account-full-%s.xml", accountId);
+    String filename = "streaming-account-full-%s.xml".formatted(accountId);
     Path filePath = subDir.resolve(filename);
 
     assertTrue(Files.exists(subDir), "Directory should be created");
@@ -280,7 +280,7 @@ class AccountDataServiceTest {
     accountDataService.saveFullAccountDataRaw(accountId, rawXml);
 
     // Then
-    String filename = String.format("streaming-account-full-%s.xml", accountId);
+    String filename = "streaming-account-full-%s.xml".formatted(accountId);
     Path filePath = tempDir.resolve(filename);
 
     assertTrue(Files.exists(filePath), "File should be created");
@@ -334,7 +334,7 @@ class AccountDataServiceTest {
     accountDataService.saveFullAccountDataRaw(accountId, secondContent);
 
     // Then
-    String filename = String.format("streaming-account-full-%s.xml", accountId);
+    String filename = "streaming-account-full-%s.xml".formatted(accountId);
     Path filePath = tempDir.resolve(filename);
     String savedContent = Files.readString(filePath);
 

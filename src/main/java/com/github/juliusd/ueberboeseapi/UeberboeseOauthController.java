@@ -1,6 +1,5 @@
 package com.github.juliusd.ueberboeseapi;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.juliusd.ueberboeseapi.generated.OauthApi;
 import com.github.juliusd.ueberboeseapi.generated.dtos.OAuthTokenRequestApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.OAuthTokenResponseApiDto;
@@ -11,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.databind.json.JsonMapper;
 
 @RestController
 @ConditionalOnProperty(name = "ueberboese.oauth.enabled", havingValue = "true")
@@ -23,7 +23,7 @@ public class UeberboeseOauthController implements OauthApi {
   private final SpotifyTokenService spotifyTokenService;
   private final ProxyService proxyService;
   private final HttpServletRequest request;
-  private final ObjectMapper objectMapper;
+  private final JsonMapper jsonMapper;
 
   @Override
   public ResponseEntity<OAuthTokenResponseApiDto> refreshOAuthToken(
@@ -66,7 +66,7 @@ public class UeberboeseOauthController implements OauthApi {
     // Convert DTO to JSON string for proxy
     String requestBodyJson;
     try {
-      requestBodyJson = objectMapper.writeValueAsString(oauthTokenRequestApiDto);
+      requestBodyJson = jsonMapper.writeValueAsString(oauthTokenRequestApiDto);
     } catch (Exception e) {
       log.error("Failed to serialize request body for proxying", e);
       return ResponseEntity.status(500).build();
@@ -86,7 +86,7 @@ public class UeberboeseOauthController implements OauthApi {
       byte[] responseBody = proxyResponse.getBody();
       if (responseBody != null) {
         OAuthTokenResponseApiDto response =
-            objectMapper.readValue(responseBody, OAuthTokenResponseApiDto.class);
+            jsonMapper.readValue(responseBody, OAuthTokenResponseApiDto.class);
         return ResponseEntity.status(proxyResponse.getStatusCode())
             .headers(proxyResponse.getHeaders())
             .body(response);

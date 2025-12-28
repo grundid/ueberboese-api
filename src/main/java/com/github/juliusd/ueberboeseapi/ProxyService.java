@@ -5,9 +5,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
@@ -71,33 +71,57 @@ public class ProxyService {
       WebClient.RequestBodySpec requestSpec =
           webClient.method(method).uri(targetUrl).headers(headers -> copyHeaders(request, headers));
 
-      // Add body if present
-      Mono<ClientResponse> responseMono;
+      // Add body if present and execute request using exchangeToMono with proper response handling
+      Mono<ResponseData> responseMono;
       if (requestBody != null && !requestBody.isEmpty()) {
-        responseMono = requestSpec.bodyValue(requestBody).exchange();
+        responseMono =
+            requestSpec
+                .bodyValue(requestBody)
+                .exchangeToMono(
+                    clientResponse -> {
+                      return clientResponse
+                          .bodyToMono(byte[].class)
+                          .map(
+                              bodyBytes ->
+                                  new ResponseData(
+                                      clientResponse.statusCode(),
+                                      clientResponse.headers().asHttpHeaders(),
+                                      bodyBytes));
+                    });
       } else {
-        responseMono = requestSpec.exchange();
+        responseMono =
+            requestSpec.exchangeToMono(
+                clientResponse -> {
+                  return clientResponse
+                      .bodyToMono(byte[].class)
+                      .map(
+                          bodyBytes ->
+                              new ResponseData(
+                                  clientResponse.statusCode(),
+                                  clientResponse.headers().asHttpHeaders(),
+                                  bodyBytes));
+                });
       }
 
       // Execute request and get response
-      ClientResponse clientResponse = responseMono.block();
+      ResponseData responseData = responseMono.block();
 
-      if (clientResponse == null) {
+      if (responseData == null) {
         log.error("Received null response from target");
         return ResponseEntity.status(502).body("Bad Gateway - No response from target".getBytes());
       }
 
-      // Get response body as bytes
-      byte[] responseBodyBytes = clientResponse.bodyToMono(byte[].class).block();
+      // Extract response components
+      byte[] responseBodyBytes = responseData.body();
       String responseBodyString = responseBodyBytes != null ? new String(responseBodyBytes) : null;
 
       // Build consolidated response log message
       StringBuilder responseLog = new StringBuilder("\n=== PROXY RESPONSE ===");
       responseLog.append("\n  requestId: ").append(requestId);
-      responseLog.append("\n  Status: ").append(clientResponse.statusCode().value());
+      responseLog.append("\n  Status: ").append(responseData.statusCode().value());
       responseLog
           .append("\n  Response Headers:")
-          .append(buildResponseHeadersString(clientResponse.headers().asHttpHeaders()));
+          .append(buildResponseHeadersString(responseData.headers()));
       if (responseBodyString != null) {
         responseLog.append("\n  Response Body: ").append(responseBodyString);
       }
@@ -112,30 +136,40 @@ public class ProxyService {
       }
 
       // Build response entity
-      return ResponseEntity.status(clientResponse.statusCode())
-          .headers(clientResponse.headers().asHttpHeaders())
+      return ResponseEntity.status(responseData.statusCode())
+          .headers(responseData.headers())
           .body(responseBodyBytes);
 
     } catch (WebClientResponseException e) {
       String errorLog =
-          String.format(
-              "\n=== PROXY ERROR ===\n  Error forwarding request %s to %s: %s %s\n  Error response"
-                  + " body: %s\n=== PROXY REQUEST END ===",
-              requestId,
-              targetUrl,
-              e.getStatusCode(),
-              e.getStatusText(),
-              e.getResponseBodyAsString());
+          """
+
+              === PROXY ERROR ===
+                Error forwarding request %s to %s: %s %s
+                Error response\
+               body: %s
+              === PROXY REQUEST END ===\
+              """
+              .formatted(
+                  requestId,
+                  targetUrl,
+                  e.getStatusCode(),
+                  e.getStatusText(),
+                  e.getResponseBodyAsString());
       log.error(errorLog);
 
       return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString().getBytes());
 
     } catch (Exception e) {
       String errorLog =
-          String.format(
-              "\n=== PROXY ERROR ===\n  Unexpected error forwarding request %s to %s\n=== PROXY REQUEST"
-                  + " END ===",
-              requestId, targetUrl);
+          """
+
+              === PROXY ERROR ===
+                Unexpected error forwarding request %s to %s
+              === PROXY REQUEST\
+               END ===\
+              """
+              .formatted(requestId, targetUrl);
       log.error(errorLog, e);
 
       return ResponseEntity.status(502).body("Bad Gateway - Error forwarding request".getBytes());
@@ -241,4 +275,7 @@ public class ProxyService {
             result.append("\n    ").append(name).append(": ").append(String.join(", ", values)));
     return result.toString();
   }
+
+  /** Record to hold response data from WebClient exchangeToMono */
+  private record ResponseData(HttpStatusCode statusCode, HttpHeaders headers, byte[] body) {}
 }

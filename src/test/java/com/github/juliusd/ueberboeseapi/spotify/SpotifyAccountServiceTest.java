@@ -1,8 +1,8 @@
 package com.github.juliusd.ueberboeseapi.spotify;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static tools.jackson.databind.json.JsonMapper.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.juliusd.ueberboeseapi.DataDirectoryProperties;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccountService.SpotifyAccount;
 import java.io.IOException;
@@ -13,6 +13,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import tools.jackson.databind.json.JsonMapper;
 
 class SpotifyAccountServiceTest {
 
@@ -22,9 +23,9 @@ class SpotifyAccountServiceTest {
 
   @BeforeEach
   void setUp() {
-    ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    JsonMapper jsonMapper = builder().findAndAddModules().build();
     DataDirectoryProperties properties = new DataDirectoryProperties(tempDir.toString());
-    spotifyAccountService = new SpotifyAccountService(objectMapper, properties);
+    spotifyAccountService = new SpotifyAccountService(jsonMapper, properties);
   }
 
   @AfterEach
@@ -146,7 +147,7 @@ class SpotifyAccountServiceTest {
     Path nestedDir = tempDir.resolve("nested/dir");
     DataDirectoryProperties properties = new DataDirectoryProperties(nestedDir.toString());
     SpotifyAccountService service =
-        new SpotifyAccountService(new ObjectMapper().findAndRegisterModules(), properties);
+        new SpotifyAccountService(builder().findAndAddModules().build(), properties);
 
     String spotifyUserId = "spotify_user_nested";
 

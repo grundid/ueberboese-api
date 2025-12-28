@@ -6,7 +6,6 @@ import com.github.juliusd.ueberboeseapi.generated.dtos.FullAccountResponseApiDto
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -31,8 +30,8 @@ public class AccountDataService {
    * @return The complete file path
    */
   private Path getAccountFilePath(String accountId) {
-    String filename = String.format(ACCOUNT_FILE_PATTERN, accountId);
-    return Paths.get(dataDirectory, filename);
+    String filename = ACCOUNT_FILE_PATTERN.formatted(accountId);
+    return Path.of(dataDirectory, filename);
   }
 
   /**

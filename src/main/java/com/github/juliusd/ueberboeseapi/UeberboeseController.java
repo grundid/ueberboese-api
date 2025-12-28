@@ -59,9 +59,8 @@ public class UeberboeseController implements DefaultApi {
 
     // Build the Location header
     String locationHeader =
-        String.format(
-            "http://streamingqa.bose.com/account/%s/device/%s/recent/%s",
-            accountId, deviceId, recentItemId);
+        "http://streamingqa.bose.com/account/%s/device/%s/recent/%s"
+            .formatted(accountId, deviceId, recentItemId);
 
     return ResponseEntity.created(URI.create(locationHeader))
         .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")

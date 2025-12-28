@@ -11,7 +11,6 @@ import static org.xmlunit.matchers.CompareMatcher.isSimilarTo;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -557,8 +556,7 @@ class UeberboeseExperimentalControllerTest extends TestBase {
     // Given - use unique account ID that doesn't have cached file
     String testAccountId = "cache-roundtrip-test";
     Path cacheFile =
-        Paths.get(
-            "src/test/resources/test-data", "streaming-account-full-" + testAccountId + ".xml");
+        Path.of("src/test/resources/test-data", "streaming-account-full-" + testAccountId + ".xml");
 
     // Clean up cache file if exists from previous test run
     Files.deleteIfExists(cacheFile);

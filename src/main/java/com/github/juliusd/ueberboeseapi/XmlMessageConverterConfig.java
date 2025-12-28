@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -33,7 +32,7 @@ public class XmlMessageConverterConfig implements WebMvcConfigurer {
   public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
     MappingJackson2XmlHttpMessageConverter xmlConverter =
         new MappingJackson2XmlHttpMessageConverter();
-    xmlConverter.setObjectMapper(xmlMapper());
+    xmlConverter.setObjectMapper(customXmlMapper());
 
     // Configure to ONLY handle XML media types (don't interfere with JSON)
     List<MediaType> supportedMediaTypes = new ArrayList<>();
@@ -51,13 +50,11 @@ public class XmlMessageConverterConfig implements WebMvcConfigurer {
   @Primary
   public ObjectMapper objectMapper() {
     ObjectMapper objectMapper = new ObjectMapper();
-    objectMapper.registerModule(new JavaTimeModule());
-    objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     return objectMapper;
   }
 
-  @Bean
-  public XmlMapper xmlMapper() {
+  @Bean(name = "customXmlMapper")
+  public XmlMapper customXmlMapper() {
     XmlMapper xmlMapper = new XmlMapper();
     xmlMapper.enable(ToXmlGenerator.Feature.WRITE_XML_DECLARATION);
     xmlMapper.enable(ToXmlGenerator.Feature.WRITE_STANDALONE_YES_TO_XML_DECLARATION);

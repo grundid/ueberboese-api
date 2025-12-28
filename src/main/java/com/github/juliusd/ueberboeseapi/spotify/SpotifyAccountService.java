@@ -1,11 +1,9 @@
 package com.github.juliusd.ueberboeseapi.spotify;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.juliusd.ueberboeseapi.DataDirectoryProperties;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -13,17 +11,18 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service
 @Slf4j
 public class SpotifyAccountService {
   private static final String ACCOUNT_FILE_PATTERN = "spotify-account-%s.json";
 
-  private final ObjectMapper objectMapper;
+  private final JsonMapper jsonMapper;
   private final String dataDirectory;
 
-  public SpotifyAccountService(ObjectMapper objectMapper, DataDirectoryProperties properties) {
-    this.objectMapper = objectMapper;
+  public SpotifyAccountService(JsonMapper jsonMapper, DataDirectoryProperties properties) {
+    this.jsonMapper = jsonMapper;
     this.dataDirectory = properties.dataDirectory();
     log.info("SpotifyAccountService initialized with data directory: {}", dataDirectory);
   }
@@ -35,8 +34,8 @@ public class SpotifyAccountService {
    * @return The complete file path
    */
   private Path getAccountFilePath(String accountId) {
-    String filename = String.format(ACCOUNT_FILE_PATTERN, accountId);
-    return Paths.get(dataDirectory, filename);
+    String filename = ACCOUNT_FILE_PATTERN.formatted(accountId);
+    return Path.of(dataDirectory, filename);
   }
 
   /**
@@ -75,7 +74,7 @@ public class SpotifyAccountService {
         new SpotifyAccount(spotifyUserId, displayName, refreshToken, OffsetDateTime.now());
 
     try {
-      String jsonContent = objectMapper.writeValueAsString(account);
+      String jsonContent = jsonMapper.writeValueAsString(account);
       Files.writeString(filePath, jsonContent);
       log.info("Successfully saved Spotify account for accountId: {} to {}", accountId, filePath);
       return accountId;
@@ -103,7 +102,7 @@ public class SpotifyAccountService {
 
     try {
       String jsonContent = Files.readString(filePath);
-      SpotifyAccount account = objectMapper.readValue(jsonContent, SpotifyAccount.class);
+      SpotifyAccount account = jsonMapper.readValue(jsonContent, SpotifyAccount.class);
       log.info("Successfully loaded Spotify account for accountId: {}", spotifyUserId);
       return Optional.of(account);
     } catch (Exception e) {
@@ -130,7 +129,7 @@ public class SpotifyAccountService {
    * @throws IOException if the directory cannot be read
    */
   public List<SpotifyAccount> listAllAccounts() throws IOException {
-    Path directory = Paths.get(dataDirectory);
+    Path directory = Path.of(dataDirectory);
 
     if (!Files.exists(directory)) {
       log.debug("Data directory does not exist: {}", directory);
@@ -144,8 +143,7 @@ public class SpotifyAccountService {
           files
               .filter(path -> path.getFileName().toString().matches("spotify-account-.*\\.json"))
               .map(this::parseAccountFile)
-              .filter(Optional::isPresent)
-              .map(Optional::get)
+              .flatMap(Optional::stream)
               .sorted(Comparator.comparing(SpotifyAccount::createdAt).reversed())
               .toList();
 
@@ -163,7 +161,7 @@ public class SpotifyAccountService {
   private Optional<SpotifyAccount> parseAccountFile(Path filePath) {
     try {
       String jsonContent = Files.readString(filePath);
-      SpotifyAccount account = objectMapper.readValue(jsonContent, SpotifyAccount.class);
+      SpotifyAccount account = jsonMapper.readValue(jsonContent, SpotifyAccount.class);
       return Optional.of(account);
     } catch (Exception e) {
       log.error("Failed to parse Spotify account file {}: {}", filePath, e.getMessage());
