@@ -1,12 +1,10 @@
 package com.github.juliusd.ueberboeseapi.mgmt;
 
-import com.github.juliusd.ueberboeseapi.generated.dtos.FullAccountResponseApiDto;
 import com.github.juliusd.ueberboeseapi.generated.mgmt.AccountManagementApi;
 import com.github.juliusd.ueberboeseapi.generated.mgmt.dtos.ErrorApiDto;
 import com.github.juliusd.ueberboeseapi.generated.mgmt.dtos.ListSpeakers200ResponseApiDto;
 import com.github.juliusd.ueberboeseapi.generated.mgmt.dtos.SpeakerApiDto;
-import com.github.juliusd.ueberboeseapi.service.AccountDataService;
-import java.io.IOException;
+import com.github.juliusd.ueberboeseapi.service.DeviceTrackingService;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -20,45 +18,26 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class MgmtController implements AccountManagementApi {
 
-  private final AccountDataService accountDataService;
+  private final DeviceTrackingService deviceTrackingService;
 
   @Override
   public ResponseEntity<ListSpeakers200ResponseApiDto> listSpeakers(String accountId) {
     log.info("Listing speakers for accountId: {}", accountId);
 
-    if (!accountDataService.hasAccountData(accountId)) {
-      log.warn("Account data not found for accountId: {}", accountId);
-      ErrorApiDto error = new ErrorApiDto();
-      error.setError("Not found");
-      error.setMessage("Account data not found for the specified account ID");
-      return ResponseEntity.status(404).header("Content-Type", "application/json").body(null);
+    List<SpeakerApiDto> speakers = new ArrayList<>();
+
+    // Get all devices from the device tracking service (ignoring accountId as per requirement)
+    for (DeviceTrackingService.DeviceInfo deviceInfo : deviceTrackingService.getAllDevices()) {
+      SpeakerApiDto speaker = new SpeakerApiDto();
+      speaker.setIpAddress(deviceInfo.getIpAddress());
+      speakers.add(speaker);
     }
 
-    try {
-      FullAccountResponseApiDto accountData = accountDataService.loadFullAccountData(accountId);
+    ListSpeakers200ResponseApiDto response = new ListSpeakers200ResponseApiDto();
+    response.setSpeakers(speakers);
 
-      List<SpeakerApiDto> speakers = new ArrayList<>();
-
-      if (accountData.getDevices() != null && accountData.getDevices().getDevice() != null) {
-        for (var device : accountData.getDevices().getDevice()) {
-          if (device.getIpaddress() != null && !device.getIpaddress().isBlank()) {
-            SpeakerApiDto speaker = new SpeakerApiDto();
-            speaker.setIpAddress(device.getIpaddress());
-            speakers.add(speaker);
-          }
-        }
-      }
-
-      ListSpeakers200ResponseApiDto response = new ListSpeakers200ResponseApiDto();
-      response.setSpeakers(speakers);
-
-      log.info("Successfully listed {} speaker(s) for accountId: {}", speakers.size(), accountId);
-      return ResponseEntity.ok().header("Content-Type", "application/json").body(response);
-
-    } catch (IOException e) {
-      log.error("Failed to load account data for accountId: {}", accountId, e);
-      throw new RuntimeException("Failed to load account data", e);
-    }
+    log.info("Successfully listed {} speaker(s)", speakers.size());
+    return ResponseEntity.ok().header("Content-Type", "application/json").body(response);
   }
 
   /** Exception handler for RuntimeException - returns 500 Internal Server Error. */

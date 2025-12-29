@@ -651,4 +651,106 @@ class UeberboeseControllerTest extends TestBase {
             .ignoreWhitespace()
             .withDifferenceEvaluator(new PlaceholderDifferenceEvaluator()));
   }
+
+  @Test
+  void powerOnSupport_shouldAcceptValidRequest() {
+    // language=XML
+    String requestXml =
+        """
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <device-data>
+          <device id="587A628A4042">
+            <serialnumber>P12343567890</serialnumber>
+            <firmware-version>27.0.6.46330.5043500 epdbuild.trunk.hepdswbld04.2022-08-04T11:20:29</firmware-version>
+            <product product_code="SoundTouch 10 sm2" type="5">
+              <serialnumber>06123456789AE</serialnumber>
+            </product>
+          </device>
+          <diagnostic-data>
+            <device-landscape>
+              <rssi>Good</rssi>
+              <gateway-ip-address>192.168.123.1</gateway-ip-address>
+              <macaddresses>
+                <macaddress>587A628A4042</macaddress>
+                <macaddress>38AA32BAB0EA</macaddress>
+              </macaddresses>
+              <ip-address>192.168.178.42</ip-address>
+              <network-connection-type>Wireless</network-connection-type>
+            </device-landscape>
+            <network-landscape>
+              <network-data xmlns="http://www.Bose.com/Schemas/2012-12/NetworkMonitor/" />
+            </network-landscape>
+          </diagnostic-data>
+        </device-data>""";
+
+    given()
+        .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+        .header("User-agent", "Bose_Lisa/27.0.6")
+        .header("Authorization", "Bearer test-token")
+        .header("Content-type", "application/vnd.bose.streaming-v1.2+xml")
+        .body(requestXml)
+        .when()
+        .post("/streaming/support/power_on")
+        .then()
+        .statusCode(200)
+        .contentType("application/vnd.bose.streaming-v1.2+xml");
+  }
+
+  @Test
+  void powerOnSupport_shouldReturn400WhenDeviceIdMissing() {
+    // language=XML - Missing device id attribute
+    String requestXml =
+        """
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <device-data>
+          <device>
+            <serialnumber>P12343567890</serialnumber>
+          </device>
+          <diagnostic-data>
+            <device-landscape>
+              <ip-address>192.168.178.26</ip-address>
+            </device-landscape>
+          </diagnostic-data>
+        </device-data>""";
+
+    given()
+        .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+        .header("User-agent", "Bose_Lisa/27.0.6")
+        .header("Authorization", "Bearer test-token")
+        .header("Content-type", "application/vnd.bose.streaming-v1.2+xml")
+        .body(requestXml)
+        .when()
+        .post("/streaming/support/power_on")
+        .then()
+        .statusCode(400);
+  }
+
+  @Test
+  void powerOnSupport_shouldReturn400WhenIpAddressMissing() {
+    // language=XML - Missing ip-address element
+    String requestXml =
+        """
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <device-data>
+          <device id="587A628A4042">
+            <serialnumber>P12343567890</serialnumber>
+          </device>
+          <diagnostic-data>
+            <device-landscape>
+              <rssi>Good</rssi>
+            </device-landscape>
+          </diagnostic-data>
+        </device-data>""";
+
+    given()
+        .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+        .header("User-agent", "Bose_Lisa/27.0.6")
+        .header("Authorization", "Bearer test-token")
+        .header("Content-type", "application/vnd.bose.streaming-v1.2+xml")
+        .body(requestXml)
+        .when()
+        .post("/streaming/support/power_on")
+        .then()
+        .statusCode(400);
+  }
 }

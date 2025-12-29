@@ -4,6 +4,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.github.juliusd.ueberboeseapi.generated.DefaultApi;
 import com.github.juliusd.ueberboeseapi.generated.dtos.CredentialApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.FullAccountResponseApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.PowerOnRequestApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.PresetsContainerApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.RecentItemApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.RecentItemRequestApiDto;
@@ -13,6 +14,7 @@ import com.github.juliusd.ueberboeseapi.generated.dtos.SourceApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.SourceProviderApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.SourceProvidersResponseApiDto;
 import com.github.juliusd.ueberboeseapi.service.AccountDataService;
+import com.github.juliusd.ueberboeseapi.service.DeviceTrackingService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.URI;
@@ -32,6 +34,7 @@ public class UeberboeseController implements DefaultApi {
   private final AccountDataService accountDataService;
   private final ProxyService proxyService;
   private final XmlMapper xmlMapper;
+  private final DeviceTrackingService deviceTrackingService;
 
   @Autowired private HttpServletRequest request;
 
@@ -386,5 +389,49 @@ public class UeberboeseController implements DefaultApi {
     provider.setName(sourceProvider.getName());
     provider.setUpdatedOn(sourceProvider.getUpdatedOn());
     return provider;
+  }
+
+  @Override
+  public ResponseEntity<Void> powerOnSupport(PowerOnRequestApiDto powerOnRequestApiDto) {
+    try {
+      log.info("Received power_on request");
+
+      // Extract device ID from the device element
+      String deviceId = null;
+      if (powerOnRequestApiDto.getDevice() != null) {
+        deviceId = powerOnRequestApiDto.getDevice().getId();
+      }
+
+      // Extract IP address from diagnostic data
+      String ipAddress = null;
+      if (powerOnRequestApiDto.getDiagnosticData() != null
+          && powerOnRequestApiDto.getDiagnosticData().getDeviceLandscape() != null) {
+        ipAddress = powerOnRequestApiDto.getDiagnosticData().getDeviceLandscape().getIpAddress();
+      }
+
+      // Validate we have both required fields
+      if (deviceId == null || deviceId.isBlank()) {
+        log.warn("Power_on request missing device ID");
+        return ResponseEntity.badRequest().build();
+      }
+
+      if (ipAddress == null || ipAddress.isBlank()) {
+        log.warn("Power_on request missing IP address for device: {}", deviceId);
+        return ResponseEntity.badRequest().build();
+      }
+
+      // Record the device power on event
+      deviceTrackingService.recordDevicePowerOn(deviceId, ipAddress);
+
+      log.info("Successfully processed power_on for device: {} at IP: {}", deviceId, ipAddress);
+
+      return ResponseEntity.ok()
+          .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
+          .build();
+
+    } catch (Exception e) {
+      log.error("Error processing power_on request", e);
+      return ResponseEntity.status(500).build();
+    }
   }
 }

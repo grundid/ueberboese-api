@@ -491,10 +491,11 @@ paths:
   /streaming/support/power_on:
     post:
       summary: Power on support
-      description: Unclear. Returns 500 server error in testing
+      description: |
+        Unclear. Returns 500 server error in testing.
+        Endpoint called by Bose SoundTouch devices when they power on.
+        Reports device information and diagnostic data including IP address.
       operationId: powerOnSupport
-      tags:
-        - unclear
       security:
         - BearerAuth: []
       requestBody:
@@ -506,51 +507,19 @@ paths:
             example: |
               <?xml version="1.0" encoding="UTF-8" ?><device-data><device id="587A628A4042"><serialnumber>P123456789101123456789</serialnumber><firmware-version>27.0.6.46330.5043500 epdbuild.trunk.hepdswbld04.2022-08-04T11:20:29</firmware-version><product product_code="SoundTouch 10 sm2" type="5"><serialnumber>069236P81556160AE</serialnumber></product></device><diagnostic-data><device-landscape><rssi>Good</rssi><gateway-ip-address>192.168.178.1</gateway-ip-address><macaddresses><macaddress>587A628A4042</macaddress><macaddress>40BD32BAB0EB</macaddress></macaddresses><ip-address>192.168.178.50</ip-address><network-connection-type>Wireless</network-connection-type></device-landscape><network-landscape><network-data xmlns="http://www.Bose.com/Schemas/2012-12/NetworkMonitor/" /></network-landscape></diagnostic-data></device-data>
       responses:
-        '500':
-          description: Server Error
+        '200':
+          description: Successfully recorded device power on event
           headers:
             Content-Type:
               schema:
                 type: string
                 example: application/vnd.bose.streaming-v1.2+xml
-            Transfer-Encoding:
-              schema:
-                type: string
-                example: chunked
-            Connection:
-              schema:
-                type: string
-                example: keep-alive
-            Date:
-              schema:
-                type: string
-                example: Sun, 14 Dec 2025 15:47:45 GMT
-            Server:
-              schema:
-                type: string
-                example: nginx/1.12.2
-            X-Cache:
-              schema:
-                type: string
-                example: Error from cloudfront
-            Via:
-              schema:
-                type: string
-                example: 1.1 25cc6d5f46d4eae9262198b05709a32e.cloudfront.net (CloudFront)
-            X-Amz-Cf-Pop:
-              schema:
-                type: string
-                example: TXL50-P5
-            X-Amz-Cf-Id:
-              schema:
-                type: string
-                example: Kl7KX4Qg9VsxbXorzrPIP2P2sOAciHNyhYfI_Q41aIITz-CUnwy9Tw==
-          content:
-            application/vnd.bose.streaming-v1.2+xml:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example: |
-                <?xml version="1.0" encoding="UTF-8" standalone="yes"?><status><message>Server Error: java.lang.RuntimeException: Failed : HTTP error code : 403</message><status-code>500</status-code></status>
+        '400':
+          description: Bad request - Invalid request body
+        '401':
+          description: Unauthorized - Invalid or missing Bearer token
+        '500':
+          description: Server Error
 
   /streaming/account/{accountId}/device/{deviceId}/group/:
     get:
