@@ -99,14 +99,14 @@ class DeviceRepositoryTest extends TestBase {
 
   @Test
   void save_shouldPreserveFirstSeenWhenUpdating() {
-    // Given
-    OffsetDateTime firstSeen = OffsetDateTime.now().minusDays(1);
-    OffsetDateTime lastSeen = OffsetDateTime.now();
+    // Given - use fixed timestamps to match DB precision (microseconds)
+    OffsetDateTime firstSeen = OffsetDateTime.parse("2025-01-01T10:00:00.123456Z");
+    OffsetDateTime lastSeen = OffsetDateTime.parse("2025-01-02T12:00:00.654321Z");
     Device original = new Device("device_preserve", "192.168.1.1", firstSeen, lastSeen, null);
     Device saved = repository.save(original);
 
     // When - update with new lastSeen
-    OffsetDateTime newLastSeen = OffsetDateTime.now().plusHours(1);
+    OffsetDateTime newLastSeen = OffsetDateTime.parse("2025-01-03T14:00:00.999999Z");
     Device updated =
         new Device("device_preserve", "192.168.1.2", firstSeen, newLastSeen, saved.version());
     repository.save(updated);
