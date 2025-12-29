@@ -1,87 +1,46 @@
 package com.github.juliusd.ueberboeseapi.spotify;
 
-import com.github.juliusd.ueberboeseapi.DataDirectoryProperties;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.OffsetDateTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.json.JsonMapper;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class SpotifyAccountService {
-  private static final String ACCOUNT_FILE_PATTERN = "spotify-account-%s.json";
 
-  private final JsonMapper jsonMapper;
-  private final String dataDirectory;
-
-  public SpotifyAccountService(JsonMapper jsonMapper, DataDirectoryProperties properties) {
-    this.jsonMapper = jsonMapper;
-    this.dataDirectory = properties.dataDirectory();
-    log.info("SpotifyAccountService initialized with data directory: {}", dataDirectory);
-  }
-
-  /**
-   * Constructs the file path for a Spotify account data file.
-   *
-   * @param accountId The account ID
-   * @return The complete file path
-   */
-  private Path getAccountFilePath(String accountId) {
-    String filename = ACCOUNT_FILE_PATTERN.formatted(accountId);
-    return Path.of(dataDirectory, filename);
-  }
-
-  /**
-   * Ensures the data directory exists, creating it if necessary.
-   *
-   * @param filePath The file path whose parent directory should exist
-   * @throws IOException if the directory cannot be created
-   */
-  private void ensureDirectoryExists(Path filePath) throws IOException {
-    Path directory = filePath.getParent();
-    if (directory != null && !Files.exists(directory)) {
-      log.info("Creating data directory: {}", directory);
-      Files.createDirectories(directory);
-    }
-  }
+  private final SpotifyAccountRepository repository;
 
   /**
    * Saves a Spotify account after successful OAuth authentication.
+   *
+   * <p>Note: This method performs an upsert (insert or update). If an account with the same
+   * spotifyUserId already exists, it will be updated with the new values.
    *
    * @param spotifyUserId The Spotify user ID
    * @param displayName The user's display name from Spotify
    * @param refreshToken The refresh token
    * @return The accountId (same as spotifyUserId for simplicity)
-   * @throws IOException if the file cannot be written
    */
-  public String saveAccount(String spotifyUserId, String displayName, String refreshToken)
-      throws IOException {
-    // Use Spotify user ID as the account ID
-    String accountId = spotifyUserId;
-    Path filePath = getAccountFilePath(accountId);
-    ensureDirectoryExists(filePath);
+  public String saveAccount(String spotifyUserId, String displayName, String refreshToken) {
+    log.debug("Attempting to save Spotify account for userId: {}", spotifyUserId);
 
-    log.debug("Attempting to save Spotify account to: {}", filePath);
+    OffsetDateTime now = OffsetDateTime.now();
+
+    // Check if account exists to preserve createdAt and version
+    Optional<SpotifyAccount> existing = repository.findById(spotifyUserId);
+    OffsetDateTime createdAt = existing.map(SpotifyAccount::createdAt).orElse(now);
+    Long version = existing.map(SpotifyAccount::version).orElse(null);
 
     SpotifyAccount account =
-        new SpotifyAccount(spotifyUserId, displayName, refreshToken, OffsetDateTime.now());
+        new SpotifyAccount(spotifyUserId, displayName, refreshToken, createdAt, now, version);
 
-    try {
-      String jsonContent = jsonMapper.writeValueAsString(account);
-      Files.writeString(filePath, jsonContent);
-      log.info("Successfully saved Spotify account for accountId: {} to {}", accountId, filePath);
-      return accountId;
-    } catch (Exception e) {
-      log.error("Failed to save Spotify account to file {}: {}", filePath, e.getMessage());
-      throw new IOException("Failed to save Spotify account file: " + filePath, e);
-    }
+    repository.save(account);
+    log.info("Successfully saved Spotify account for accountId: {}", spotifyUserId);
+    return spotifyUserId;
   }
 
   /**
@@ -91,24 +50,17 @@ public class SpotifyAccountService {
    * @return Optional containing the account if found
    */
   public Optional<SpotifyAccount> getAccountBySpotifyUserId(String spotifyUserId) {
-    Path filePath = getAccountFilePath(spotifyUserId);
+    log.debug("Attempting to load Spotify account for userId: {}", spotifyUserId);
 
-    log.debug("Attempting to load Spotify account from: {}", filePath);
+    Optional<SpotifyAccount> account = repository.findById(spotifyUserId);
 
-    if (!Files.exists(filePath)) {
-      log.debug("Spotify account file not found: {}", filePath);
-      return Optional.empty();
-    }
-
-    try {
-      String jsonContent = Files.readString(filePath);
-      SpotifyAccount account = jsonMapper.readValue(jsonContent, SpotifyAccount.class);
+    if (account.isPresent()) {
       log.info("Successfully loaded Spotify account for accountId: {}", spotifyUserId);
-      return Optional.of(account);
-    } catch (Exception e) {
-      log.error("Failed to parse Spotify account file {}: {}", filePath, e.getMessage());
-      return Optional.empty();
+    } else {
+      log.debug("Spotify account not found for userId: {}", spotifyUserId);
     }
+
+    return account;
   }
 
   /**
@@ -118,65 +70,20 @@ public class SpotifyAccountService {
    * @return true if the account exists, false otherwise
    */
   public boolean accountExists(String spotifyUserId) {
-    Path filePath = getAccountFilePath(spotifyUserId);
-    return Files.exists(filePath);
+    return repository.existsBySpotifyUserId(spotifyUserId);
   }
 
   /**
    * Lists all stored Spotify accounts.
    *
    * @return List of all Spotify accounts, sorted by createdAt descending (newest first)
-   * @throws IOException if the directory cannot be read
    */
-  public List<SpotifyAccount> listAllAccounts() throws IOException {
-    Path directory = Path.of(dataDirectory);
+  public List<SpotifyAccount> listAllAccounts() {
+    log.debug("Listing all Spotify accounts from database");
 
-    if (!Files.exists(directory)) {
-      log.debug("Data directory does not exist: {}", directory);
-      return List.of();
-    }
+    List<SpotifyAccount> accounts = repository.findAllByOrderByCreatedAtDesc();
 
-    log.debug("Listing all Spotify accounts from directory: {}", directory);
-
-    try (Stream<Path> files = Files.list(directory)) {
-      List<SpotifyAccount> accounts =
-          files
-              .filter(path -> path.getFileName().toString().matches("spotify-account-.*\\.json"))
-              .map(this::parseAccountFile)
-              .flatMap(Optional::stream)
-              .sorted(Comparator.comparing(SpotifyAccount::createdAt).reversed())
-              .toList();
-
-      log.info("Found {} Spotify account(s)", accounts.size());
-      return accounts;
-    }
+    log.info("Found {} Spotify account(s)", accounts.size());
+    return accounts;
   }
-
-  /**
-   * Parses a Spotify account file.
-   *
-   * @param filePath The path to the account file
-   * @return Optional containing the account if successfully parsed, empty otherwise
-   */
-  private Optional<SpotifyAccount> parseAccountFile(Path filePath) {
-    try {
-      String jsonContent = Files.readString(filePath);
-      SpotifyAccount account = jsonMapper.readValue(jsonContent, SpotifyAccount.class);
-      return Optional.of(account);
-    } catch (Exception e) {
-      log.error("Failed to parse Spotify account file {}: {}", filePath, e.getMessage());
-      return Optional.empty();
-    }
-  }
-
-  /**
-   * Record representing a stored Spotify account.
-   *
-   * @param spotifyUserId The Spotify user ID
-   * @param displayName The user's display name from Spotify
-   * @param refreshToken The refresh token
-   * @param createdAt When the account was created
-   */
-  public record SpotifyAccount(
-      String spotifyUserId, String displayName, String refreshToken, OffsetDateTime createdAt) {}
 }

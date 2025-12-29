@@ -5,8 +5,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.github.juliusd.ueberboeseapi.generated.dtos.OAuthTokenRequestApiDto;
-import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccountService.SpotifyAccount;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,28 +30,22 @@ class SpotifyTokenServiceTest {
   }
 
   @Test
-  void loadSpotifyAuth_shouldSelectOldestAccount() throws IOException {
+  void loadSpotifyAuth_shouldSelectOldestAccount() {
     // Given: Three accounts with different creation times
+    OffsetDateTime newest = OffsetDateTime.now().minusDays(1);
     SpotifyAccount newestAccount =
         new SpotifyAccount(
-            "user_newest",
-            "Newest User",
-            "refresh_token_newest",
-            OffsetDateTime.now().minusDays(1));
+            "user_newest", "Newest User", "refresh_token_newest", newest, newest, 0L);
 
+    OffsetDateTime middle = OffsetDateTime.now().minusDays(5);
     SpotifyAccount middleAccount =
         new SpotifyAccount(
-            "user_middle",
-            "Middle User",
-            "refresh_token_middle",
-            OffsetDateTime.now().minusDays(5));
+            "user_middle", "Middle User", "refresh_token_middle", middle, middle, 0L);
 
+    OffsetDateTime oldest = OffsetDateTime.now().minusDays(10);
     SpotifyAccount oldestAccount =
         new SpotifyAccount(
-            "user_oldest",
-            "Oldest User",
-            "refresh_token_oldest",
-            OffsetDateTime.now().minusDays(10));
+            "user_oldest", "Oldest User", "refresh_token_oldest", oldest, oldest, 0L);
 
     // listAllAccounts returns sorted by createdAt descending (newest first)
     List<SpotifyAccount> accounts = List.of(newestAccount, middleAccount, oldestAccount);
@@ -75,7 +67,7 @@ class SpotifyTokenServiceTest {
   }
 
   @Test
-  void loadSpotifyAuth_shouldThrowExceptionWhenNoAccounts() throws IOException {
+  void loadSpotifyAuth_shouldThrowExceptionWhenNoAccounts() {
     // Given: No accounts exist
     when(mockAccountService.listAllAccounts()).thenReturn(List.of());
 
@@ -90,9 +82,9 @@ class SpotifyTokenServiceTest {
   }
 
   @Test
-  void loadSpotifyAuth_shouldThrowExceptionWhenAccountServiceFails() throws IOException {
-    // Given: Account service throws IOException
-    when(mockAccountService.listAllAccounts()).thenThrow(new IOException("Disk error"));
+  void loadSpotifyAuth_shouldThrowExceptionWhenAccountServiceFails() {
+    // Given: Account service throws RuntimeException
+    when(mockAccountService.listAllAccounts()).thenThrow(new RuntimeException("Database error"));
 
     // When/Then
     OAuthTokenRequestApiDto request = new OAuthTokenRequestApiDto();
@@ -100,19 +92,15 @@ class SpotifyTokenServiceTest {
     request.setRefreshToken("any-token");
 
     assertThatThrownBy(() -> spotifyTokenService.loadSpotifyAuth(request))
-        .isInstanceOf(SpotifyException.class)
-        .hasCauseInstanceOf(IOException.class);
+        .isInstanceOf(RuntimeException.class);
   }
 
   @Test
-  void loadSpotifyAuth_shouldUseSingleAccountWhenOnlyOneExists() throws IOException {
+  void loadSpotifyAuth_shouldUseSingleAccountWhenOnlyOneExists() {
     // Given: Only one account exists
+    OffsetDateTime now = OffsetDateTime.now().minusDays(1);
     SpotifyAccount singleAccount =
-        new SpotifyAccount(
-            "user_single",
-            "Single User",
-            "refresh_token_single",
-            OffsetDateTime.now().minusDays(1));
+        new SpotifyAccount("user_single", "Single User", "refresh_token_single", now, now, 0L);
 
     when(mockAccountService.listAllAccounts()).thenReturn(List.of(singleAccount));
 

@@ -1,54 +1,21 @@
 package com.github.juliusd.ueberboeseapi.spotify;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static tools.jackson.databind.json.JsonMapper.*;
 
-import com.github.juliusd.ueberboeseapi.DataDirectoryProperties;
-import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccountService.SpotifyAccount;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import com.github.juliusd.ueberboeseapi.TestBase;
+import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 
-class SpotifyAccountServiceTest {
+class SpotifyAccountServiceTest extends TestBase {
 
-  @TempDir Path tempDir;
+  @Autowired private SpotifyAccountService spotifyAccountService;
 
-  private SpotifyAccountService spotifyAccountService;
-
-  @BeforeEach
-  void setUp() {
-    JsonMapper jsonMapper = builder().findAndAddModules().build();
-    DataDirectoryProperties properties = new DataDirectoryProperties(tempDir.toString());
-    spotifyAccountService = new SpotifyAccountService(jsonMapper, properties);
-  }
-
-  @AfterEach
-  void tearDown() throws IOException {
-    // Clean up any created files
-    if (Files.exists(tempDir)) {
-      Files.walk(tempDir)
-          .sorted((a, b) -> -a.compareTo(b)) // Reverse order to delete files before directories
-          .forEach(
-              path -> {
-                try {
-                  if (!path.equals(tempDir)) { // Don't delete the temp dir itself, JUnit does it
-                    Files.deleteIfExists(path);
-                  }
-                } catch (IOException e) {
-                  // Ignore
-                }
-              });
-    }
-  }
+  @Autowired private SpotifyAccountRepository repository;
 
   @Test
-  void saveAccount_shouldCreateFileAndReturnAccountId() throws IOException {
+  void saveAccount_shouldSaveToDatabaseAndReturnAccountId() {
     // Given
     String spotifyUserId = "spotify_user_123";
     String displayName = "Test User";
@@ -59,12 +26,11 @@ class SpotifyAccountServiceTest {
 
     // Then
     assertThat(accountId).isEqualTo(spotifyUserId);
-    Path expectedFile = tempDir.resolve("spotify-account-" + spotifyUserId + ".json");
-    assertThat(expectedFile).exists();
+    assertThat(repository.existsBySpotifyUserId(spotifyUserId)).isTrue();
   }
 
   @Test
-  void getAccountBySpotifyUserId_shouldReturnAccountWhenExists() throws IOException {
+  void getAccountBySpotifyUserId_shouldReturnAccountWhenExists() {
     // Given
     String spotifyUserId = "spotify_user_456";
     String displayName = "Another User";
@@ -98,7 +64,7 @@ class SpotifyAccountServiceTest {
   }
 
   @Test
-  void accountExists_shouldReturnTrueWhenAccountExists() throws IOException {
+  void accountExists_shouldReturnTrueWhenAccountExists() {
     // Given
     String spotifyUserId = "spotify_user_789";
     spotifyAccountService.saveAccount(spotifyUserId, "User Name", "refresh");
@@ -123,7 +89,7 @@ class SpotifyAccountServiceTest {
   }
 
   @Test
-  void saveAccount_shouldOverwriteExistingAccount() throws IOException {
+  void saveAccount_shouldOverwriteExistingAccount() {
     // Given
     String spotifyUserId = "spotify_user_101";
     String firstDisplayName = "First Name";
@@ -142,22 +108,20 @@ class SpotifyAccountServiceTest {
   }
 
   @Test
-  void saveAccount_shouldCreateDirectoryIfNotExists() throws IOException {
+  void listAllAccounts_shouldReturnAllAccountsSortedByCreatedAtDesc() {
     // Given
-    Path nestedDir = tempDir.resolve("nested/dir");
-    DataDirectoryProperties properties = new DataDirectoryProperties(nestedDir.toString());
-    SpotifyAccountService service =
-        new SpotifyAccountService(builder().findAndAddModules().build(), properties);
-
-    String spotifyUserId = "spotify_user_nested";
+    spotifyAccountService.saveAccount("user1", "User 1", "token1");
+    spotifyAccountService.saveAccount("user2", "User 2", "token2");
+    spotifyAccountService.saveAccount("user3", "User 3", "token3");
 
     // When
-    String accountId = service.saveAccount(spotifyUserId, "Nested User", "refresh");
+    List<SpotifyAccount> accounts = spotifyAccountService.listAllAccounts();
 
     // Then
-    assertThat(accountId).isEqualTo(spotifyUserId);
-    assertThat(nestedDir).exists();
-    Path expectedFile = nestedDir.resolve("spotify-account-" + spotifyUserId + ".json");
-    assertThat(expectedFile).exists();
+    assertThat(accounts).hasSize(3);
+    // Accounts should be sorted by createdAt descending (newest first)
+    assertThat(accounts.get(0).spotifyUserId()).isEqualTo("user3");
+    assertThat(accounts.get(1).spotifyUserId()).isEqualTo("user2");
+    assertThat(accounts.get(2).spotifyUserId()).isEqualTo("user1");
   }
 }

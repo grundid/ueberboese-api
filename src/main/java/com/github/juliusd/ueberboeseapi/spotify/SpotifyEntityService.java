@@ -70,7 +70,7 @@ public class SpotifyEntityService {
   private SpotifyApi createAuthenticatedSpotifyApi() {
     try {
       // Get the oldest connected Spotify account
-      List<SpotifyAccountService.SpotifyAccount> accounts = spotifyAccountService.listAllAccounts();
+      List<SpotifyAccount> accounts = spotifyAccountService.listAllAccounts();
       if (accounts.isEmpty()) {
         log.error("No Spotify accounts connected");
         throw new NoSpotifyAccountException(
@@ -78,7 +78,7 @@ public class SpotifyEntityService {
       }
 
       // Use the oldest account (last in the list sorted by createdAt descending)
-      SpotifyAccountService.SpotifyAccount oldestAccount = accounts.get(accounts.size() - 1);
+      SpotifyAccount oldestAccount = accounts.get(accounts.size() - 1);
       log.info(
           "Using Spotify account: {} ({})",
           oldestAccount.displayName(),

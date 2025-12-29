@@ -21,21 +21,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@TestPropertySource(
-    properties = {
-      "proxy.target-host=http://localhost:8089",
-      "proxy.auth-target-host=http://localhost:8090",
-      "proxy.software-update-target-host=http://localhost:8091"
-    })
-class ProxyControllerTest {
+class ProxyControllerTest extends TestBase {
 
   @Autowired private MockMvc mockMvc;
 
