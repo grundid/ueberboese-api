@@ -36,7 +36,7 @@ public class SpotifyTokenService {
   public AuthorizationCodeCredentials loadSpotifyAuth(
       OAuthTokenRequestApiDto oauthTokenRequestApiDto) {
     try {
-      checkProperties(oauthTokenRequestApiDto);
+      checkProperties();
 
       // Get the oldest connected Spotify account
       var accounts = spotifyAccountService.listAllAccounts();
@@ -63,6 +63,10 @@ public class SpotifyTokenService {
               .setClientSecret(spotifyAuthProperties.clientSecret())
               .build();
 
+      if (oldestAccount.refreshToken().equals(oauthTokenRequestApiDto.getRefreshToken())) {
+        log.info("Refresh token match!");
+      }
+
       var authorizationCodeRefreshRequest = spotifyApi.authorizationCodeRefresh().build();
       var authorizationCodeCredentials = authorizationCodeRefreshRequest.execute();
 
@@ -79,7 +83,7 @@ public class SpotifyTokenService {
     }
   }
 
-  private void checkProperties(OAuthTokenRequestApiDto oauthTokenRequestApiDto) {
+  private void checkProperties() {
     if (spotifyAuthProperties.clientId() == null || spotifyAuthProperties.clientId().isBlank()) {
       log.warn("Spotify client ID is empty or not configured");
     }
