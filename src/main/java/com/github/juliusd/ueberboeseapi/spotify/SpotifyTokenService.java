@@ -47,7 +47,7 @@ public class SpotifyTokenService {
       }
 
       // Use the oldest account (last in the list sorted by createdAt descending)
-      var oldestAccount = accounts.get(accounts.size() - 1);
+      var oldestAccount = accounts.getLast();
       log.info(
           "Using Spotify account: {} ({})",
           oldestAccount.displayName(),
