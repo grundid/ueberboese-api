@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StreamUtils;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
  */
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 public class ProxyController {
 
   private final ProxyService proxyService;
@@ -30,6 +32,7 @@ public class ProxyController {
    */
   @RequestMapping("/**")
   public ResponseEntity<byte[]> proxyRequest(HttpServletRequest request) throws IOException {
+    log.info("Proxying request: {} {}", request.getMethod(), request.getRequestURI());
     Charset charset = getCharset(request);
     String body = StreamUtils.copyToString(request.getInputStream(), charset);
     return proxyService.forwardRequest(request, body);

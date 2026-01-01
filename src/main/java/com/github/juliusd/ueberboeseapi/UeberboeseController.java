@@ -43,6 +43,7 @@ public class UeberboeseController implements DefaultApi {
   @Override
   public ResponseEntity<RecentItemResponseApiDto> addRecentItem(
       String accountId, String deviceId, RecentItemRequestApiDto recentItemRequestApiDto) {
+    log.info("Adding recent item for accountId: {} and deviceId: {}", accountId, deviceId);
 
     // Generate a unique ID for the recent item (simulating the real API behavior)
     String recentItemId =
@@ -98,6 +99,7 @@ public class UeberboeseController implements DefaultApi {
 
   @Override
   public ResponseEntity<SourceProvidersResponseApiDto> getSourceProviders() {
+    log.info("Getting source providers");
 
     SourceProvidersResponseApiDto response = new SourceProvidersResponseApiDto();
 
@@ -119,6 +121,7 @@ public class UeberboeseController implements DefaultApi {
 
   @Override
   public ResponseEntity<FullAccountResponseApiDto> getFullAccount(String accountId) {
+    log.info("Getting full account for accountId: {}", accountId);
     return fullAccountService
         .getFullAccount(accountId, request)
         .map(
@@ -142,6 +145,7 @@ public class UeberboeseController implements DefaultApi {
 
   @Override
   public ResponseEntity<RecentsContainerApiDto> getRecents(String accountId, String deviceId) {
+    log.info("Getting recents for accountId: {} and deviceId: {}", accountId, deviceId);
 
     RecentsContainerApiDto response = new RecentsContainerApiDto();
 
