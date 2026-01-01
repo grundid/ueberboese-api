@@ -81,6 +81,7 @@ public class ProxyService {
                     clientResponse -> {
                       return clientResponse
                           .bodyToMono(byte[].class)
+                          .defaultIfEmpty(new byte[0]) // Handle empty response bodies
                           .map(
                               bodyBytes ->
                                   new ResponseData(
@@ -94,6 +95,7 @@ public class ProxyService {
                 clientResponse -> {
                   return clientResponse
                       .bodyToMono(byte[].class)
+                      .defaultIfEmpty(new byte[0]) // Handle empty response bodies
                       .map(
                           bodyBytes ->
                               new ResponseData(

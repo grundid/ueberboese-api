@@ -458,4 +458,58 @@ class ProxyControllerTest extends TestBase {
     // Verify request did NOT go to software update server
     softwareUpdateWireMockServer.verify(0, getRequestedFor(urlEqualTo("/api/data")));
   }
+
+  @Test
+  void shouldHandleEmptyResponseBody() throws Exception {
+    // Given - Mock server returns 204 No Content with empty body
+    wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/api/no-content"))
+            .willReturn(aResponse().withStatus(204).withHeader("X-Custom-Header", "test-value")));
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/api/no-content")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"data\": \"test\"}"))
+        .andExpect(status().isNoContent());
+
+    // Verify request was forwarded correctly
+    wireMockServer.verify(postRequestedFor(urlEqualTo("/api/no-content")));
+  }
+
+  @Test
+  void shouldHandleEmptyResponseBodyWithOkStatus() throws Exception {
+    // Given - Mock server returns 200 OK with empty body
+    wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/api/empty-ok")).willReturn(aResponse().withStatus(200)));
+
+    // When & Then
+    mockMvc.perform(get("/api/empty-ok")).andExpect(status().isOk());
+
+    // Verify request was forwarded correctly
+    wireMockServer.verify(getRequestedFor(urlEqualTo("/api/empty-ok")));
+  }
+
+  @Test
+  void shouldHandleEmptyResponseBodyWithCreatedStatus() throws Exception {
+    // Given - Mock server returns 201 Created with empty body
+    wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/api/create"))
+            .willReturn(
+                aResponse()
+                    .withStatus(201)
+                    .withHeader("Location", "http://localhost:8089/api/resource/123")));
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/api/create")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\": \"test\"}"))
+        .andExpect(status().isCreated());
+
+    // Verify request was forwarded correctly
+    wireMockServer.verify(postRequestedFor(urlEqualTo("/api/create")));
+  }
 }
