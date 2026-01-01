@@ -3,9 +3,15 @@ package com.github.juliusd.ueberboeseapi.service;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.github.juliusd.ueberboeseapi.ProxyService;
 import com.github.juliusd.ueberboeseapi.generated.dtos.FullAccountResponseApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.SourceApiDto;
+import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccount;
+import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccountService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +29,7 @@ public class FullAccountService {
   private final AccountDataService accountDataService;
   private final ProxyService proxyService;
   private final XmlMapper xmlMapper;
+  private final SpotifyAccountService spotifyAccountService;
 
   /**
    * Retrieves full account data for the given account ID. First checks the cache, and if not found,
@@ -41,6 +48,7 @@ public class FullAccountService {
       try {
         FullAccountResponseApiDto response = accountDataService.loadFullAccountData(accountId);
         log.info("Successfully loaded account data from cache for accountId: {}", accountId);
+        patch(response);
         return Optional.of(response);
       } catch (IOException e) {
         log.error(
@@ -88,6 +96,37 @@ public class FullAccountService {
           accountId,
           parseException.getMessage());
       return Optional.empty();
+    }
+  }
+
+  private void patch(FullAccountResponseApiDto response) {
+    // Get all stored Spotify accounts
+    List<SpotifyAccount> spotifyAccounts = spotifyAccountService.listAllAccounts();
+
+    // Create a map for efficient lookup: spotifyUserId -> refreshToken
+    Map<String, String> userIdToRefreshToken =
+        spotifyAccounts.stream()
+            .collect(Collectors.toMap(SpotifyAccount::spotifyUserId, SpotifyAccount::refreshToken));
+
+    // Iterate through sources and update matching Spotify credentials
+    if (response.getSources() != null && response.getSources().getSource() != null) {
+      for (SourceApiDto source : response.getSources().getSource()) {
+        // Check if this is a Spotify source (sourceproviderid == "15")
+        if ("15".equals(source.getSourceproviderid())) {
+          String username = source.getUsername();
+
+          // Check if we have a stored refresh token for this user
+          if (username != null && userIdToRefreshToken.containsKey(username)) {
+            String refreshToken = userIdToRefreshToken.get(username);
+
+            // Update the credential value
+            if (source.getCredential() != null) {
+              source.getCredential().setValue(refreshToken);
+              log.debug("Updated Spotify credential for username: {}", username);
+            }
+          }
+        }
+      }
     }
   }
 }
