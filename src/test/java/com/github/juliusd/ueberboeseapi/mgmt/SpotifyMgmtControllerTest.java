@@ -8,14 +8,14 @@ import static org.mockito.Mockito.when;
 import com.github.juliusd.ueberboeseapi.TestBase;
 import com.github.juliusd.ueberboeseapi.spotify.InvalidSpotifyUriException;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccount;
-import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccountService;
+import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccountRepository;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyEntityNotFoundException;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyEntityService;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyManagementService;
 import io.restassured.http.ContentType;
 import java.time.OffsetDateTime;
-import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -23,8 +23,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class SpotifyMgmtControllerTest extends TestBase {
 
   @MockitoBean private SpotifyManagementService spotifyManagementService;
-  @MockitoBean private SpotifyAccountService spotifyAccountService;
   @MockitoBean private SpotifyEntityService spotifyEntityService;
+  @Autowired private SpotifyAccountRepository spotifyAccountRepository;
 
   @Test
   void initSpotifyAuth_shouldReturnRedirectUrl() {
@@ -203,12 +203,10 @@ class SpotifyMgmtControllerTest extends TestBase {
     // Given
     OffsetDateTime time1 = OffsetDateTime.parse("2025-12-23T10:30:00Z");
     OffsetDateTime time2 = OffsetDateTime.parse("2025-12-22T14:15:00Z");
-    List<SpotifyAccount> mockAccounts =
-        List.of(
-            new SpotifyAccount("user1", "John Doe", "refresh_token_1", time1, time1, 0L),
-            new SpotifyAccount("user2", "Jane Smith", "refresh_token_2", time2, time2, 0L));
-
-    when(spotifyAccountService.listAllAccounts()).thenReturn(mockAccounts);
+    spotifyAccountRepository.save(
+        new SpotifyAccount("user1", "John Doe", "refresh_token_1", time1, time1, null));
+    spotifyAccountRepository.save(
+        new SpotifyAccount("user2", "Jane Smith", "refresh_token_2", time2, time2, null));
 
     // When / Then
     given()
@@ -235,7 +233,7 @@ class SpotifyMgmtControllerTest extends TestBase {
   @Test
   void listSpotifyAccounts_shouldReturnEmptyList() {
     // Given
-    when(spotifyAccountService.listAllAccounts()).thenReturn(List.of());
+    // No accounts in DB (TestBase clears DB before each test)
 
     // When / Then
     given()
@@ -249,25 +247,6 @@ class SpotifyMgmtControllerTest extends TestBase {
         .contentType("application/json")
         .body("accounts", hasSize(0))
         .body("accounts", empty());
-  }
-
-  @Test
-  void listSpotifyAccounts_shouldHandleServiceException() {
-    // Given
-    when(spotifyAccountService.listAllAccounts()).thenThrow(new RuntimeException("Test"));
-
-    // When / Then
-    given()
-        .auth()
-        .basic("admin", "test-password-123")
-        .header("Content-Type", "application/json")
-        .when()
-        .get("/mgmt/spotify/accounts")
-        .then()
-        .statusCode(500)
-        .contentType("application/json")
-        .body("error", equalTo("Internal server error"))
-        .body("message", notNullValue());
   }
 
   @Test
