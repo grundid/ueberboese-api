@@ -846,4 +846,31 @@ class UeberboeseExperimentalControllerTest extends TestBase {
     assertThat(newDevice.name()).isEqualTo("New Device");
     assertThat(newDevice.ipAddress()).isNull();
   }
+
+  @Test
+  void getStreamingToken_shouldReturnAuthorizationHeader() {
+    given()
+        .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+        .header("User-agent", "Bose_Lisa/27.0.6")
+        .header("Authorization", "Bearer inputToken123")
+        .when()
+        .get("/streaming/device/587A628A4042/streaming_token")
+        .then()
+        .statusCode(200)
+        .header("Authorization", "mockRefreshedToken123xyz");
+  }
+
+  @Test
+  void getProviderSettings_shouldReturnEmptyResponse() {
+    given()
+        .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+        .header("User-agent", "Bose_Lisa/27.0.6")
+        .header("Authorization", "Bearer mockToken123")
+        .when()
+        .get("/streaming/account/6921042/provider_settings")
+        .then()
+        .statusCode(200)
+        .contentType("application/vnd.bose.streaming-v1.2+xml")
+        .header("METHOD_NAME", "getProviderSettings");
+  }
 }

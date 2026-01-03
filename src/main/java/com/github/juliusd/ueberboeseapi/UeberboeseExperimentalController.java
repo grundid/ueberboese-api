@@ -125,4 +125,23 @@ public class UeberboeseExperimentalController implements ExperimentalApi {
         .header("METHOD_NAME", "updateDevice")
         .body(response);
   }
+
+  @Override
+  public ResponseEntity<Void> getProviderSettings(String accountId) {
+    log.info("Getting provider settings for account {}", accountId);
+
+    return ResponseEntity.ok()
+        .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
+        .header("METHOD_NAME", "getProviderSettings")
+        .build();
+  }
+
+  @Override
+  public ResponseEntity<Void> getStreamingToken(String deviceId) {
+    log.info("Getting streaming token for device {}", deviceId);
+
+    String mockToken = "mockRefreshedToken123xyz";
+
+    return ResponseEntity.ok().header("Authorization", mockToken).build();
+  }
 }

@@ -533,7 +533,7 @@ paths:
       description: Unclear. Returns empty 200 ok response for me
       operationId: getProviderSettings
       tags:
-        - unclear
+        - experimental
       security:
         - BearerAuth: []
       parameters:
@@ -733,6 +733,37 @@ paths:
           description: Forbidden - Valid token but insufficient permissions
         '404':
           description: Not found - Account not found
+        '500':
+          description: Internal server error
+
+  /streaming/device/{deviceId}/streaming_token:
+    get:
+      summary: Get streaming token
+      description: |
+        Unclear. Returns 200 ok response with empty body
+        and an `Authorization` header with a value containing A-Z, a-z, 0-9, +, /
+      operationId: getStreamingToken
+      tags:
+        - experimental
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/deviceId'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          headers:
+            Authorization:
+              schema:
+                type: string
+                example: "1a2312e/423f243f+31f/qwe43r3"
+              description: Refreshed Bearer token
+        '401':
+          description: Unauthorized - Invalid or missing Bearer token
+        '403':
+          description: Forbidden - Valid token but insufficient permissions
+        '404':
+          description: Not found - Device not found
         '500':
           description: Internal server error
 
