@@ -109,7 +109,7 @@ Replace `192.168.178.2` with your device's IP address.
 Once connected via netcat, enter:
 
 ```bash
-envswitch boseurls set https://ueberboese.your-example-host.org https://ueberboese-downloads.your-example-host.org
+envswitch boseurls set https://ueberboese.your-example-host.org https://ueberboese-downloads.your-example-host.org/updates/soundtouch
 ```
 
 Replace `your-example-host.org` with your actual domain.
