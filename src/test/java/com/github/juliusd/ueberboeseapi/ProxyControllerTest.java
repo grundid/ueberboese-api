@@ -7,12 +7,15 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToXml;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -837,9 +840,13 @@ class ProxyControllerTest extends TestBase {
   void shouldForwardMultipleSensitiveHeaders() throws Exception {
     // Given
     String authToken = "Bearer token123";
-    String cookieValue = "sessionId=xyz789";
+    String cookieValue = "sessionId=xyz789; JSESSIONID=ABC123DEF456; token=secret-token-value";
     String userAgent = "Foobar/5.0";
     String apiKey = "secret-api-key";
+    String sessionToken = "session-abc-123-xyz";
+    String xAuthToken = "x-auth-token-value";
+    String acceptLanguage = "en-US,en;q=0.9";
+    String xRequestId = "req-12345-67890";
 
     wireMockServer.stubFor(
         WireMock.get(urlEqualTo("/api/all-headers"))
@@ -847,6 +854,10 @@ class ProxyControllerTest extends TestBase {
             .withHeader("Cookie", equalTo(cookieValue))
             .withHeader("User-Agent", equalTo(userAgent))
             .withHeader("X-API-Key", equalTo(apiKey))
+            .withHeader("X-Session-Token", equalTo(sessionToken))
+            .withHeader("X-Auth-Token", equalTo(xAuthToken))
+            .withHeader("Accept-Language", equalTo(acceptLanguage))
+            .withHeader("X-Request-ID", equalTo(xRequestId))
             .willReturn(
                 aResponse()
                     .withStatus(200)
@@ -860,7 +871,11 @@ class ProxyControllerTest extends TestBase {
                 .header("Authorization", authToken)
                 .header("Cookie", cookieValue)
                 .header("User-Agent", userAgent)
-                .header("X-API-Key", apiKey))
+                .header("X-API-Key", apiKey)
+                .header("X-Session-Token", sessionToken)
+                .header("X-Auth-Token", xAuthToken)
+                .header("Accept-Language", acceptLanguage)
+                .header("X-Request-ID", xRequestId))
         .andExpect(status().isOk())
         .andExpect(content().json("{\"status\": \"all headers received\"}"));
 
@@ -870,6 +885,165 @@ class ProxyControllerTest extends TestBase {
             .withHeader("Authorization", equalTo(authToken))
             .withHeader("Cookie", equalTo(cookieValue))
             .withHeader("User-Agent", equalTo(userAgent))
-            .withHeader("X-API-Key", equalTo(apiKey)));
+            .withHeader("X-API-Key", equalTo(apiKey))
+            .withHeader("X-Session-Token", equalTo(sessionToken))
+            .withHeader("X-Auth-Token", equalTo(xAuthToken))
+            .withHeader("Accept-Language", equalTo(acceptLanguage))
+            .withHeader("X-Request-ID", equalTo(xRequestId)));
+  }
+
+  @Test
+  void shouldForward301PermanentRedirect() throws Exception {
+    // Given
+    String redirectLocation = "http://localhost:8089/api/new-location";
+
+    wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/api/old-endpoint"))
+            .willReturn(
+                aResponse()
+                    .withStatus(301)
+                    .withHeader("Location", redirectLocation)
+                    .withHeader("Cache-Control", "max-age=3600")));
+
+    // When & Then
+    mockMvc
+        .perform(get("/api/old-endpoint"))
+        .andExpect(status().isMovedPermanently())
+        .andExpect(header().string("Location", redirectLocation))
+        .andExpect(header().string("Cache-Control", "max-age=3600"));
+
+    // Verify request was forwarded
+    wireMockServer.verify(getRequestedFor(urlEqualTo("/api/old-endpoint")));
+  }
+
+  @Test
+  void shouldForward302TemporaryRedirect() throws Exception {
+    // Given
+    String redirectLocation = "http://localhost:8089/api/temporary-location";
+
+    wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/api/redirect-me"))
+            .willReturn(
+                aResponse()
+                    .withStatus(302)
+                    .withHeader("Location", redirectLocation)
+                    .withHeader("Cache-Control", "no-cache")));
+
+    // When & Then
+    mockMvc
+        .perform(get("/api/redirect-me"))
+        .andExpect(status().isFound())
+        .andExpect(header().string("Location", redirectLocation))
+        .andExpect(header().string("Cache-Control", "no-cache"));
+
+    // Verify request was forwarded
+    wireMockServer.verify(getRequestedFor(urlEqualTo("/api/redirect-me")));
+  }
+
+  @Test
+  void shouldForward303SeeOtherRedirect() throws Exception {
+    // Given
+    String redirectLocation = "http://localhost:8089/api/result";
+
+    wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/api/submit"))
+            .willReturn(
+                aResponse()
+                    .withStatus(303)
+                    .withHeader("Location", redirectLocation)));
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/api/submit")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"data\": \"test\"}"))
+        .andExpect(status().isSeeOther())
+        .andExpect(header().string("Location", redirectLocation));
+
+    // Verify request was forwarded
+    wireMockServer.verify(postRequestedFor(urlEqualTo("/api/submit")));
+  }
+
+  @Test
+  void shouldForward307TemporaryRedirectWithBody() throws Exception {
+    // Given
+    String redirectLocation = "http://localhost:8089/api/alternative-endpoint";
+    String requestBody = "{\"action\": \"process\"}";
+
+    wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/api/endpoint"))
+            .withRequestBody(equalToJson(requestBody))
+            .willReturn(
+                aResponse()
+                    .withStatus(307)
+                    .withHeader("Location", redirectLocation)));
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/api/endpoint")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+        .andExpect(status().isTemporaryRedirect())
+        .andExpect(header().string("Location", redirectLocation));
+
+    // Verify request was forwarded with correct body
+    wireMockServer.verify(
+        postRequestedFor(urlEqualTo("/api/endpoint"))
+            .withRequestBody(equalToJson(requestBody)));
+  }
+
+  @Test
+  void shouldForward308PermanentRedirect() throws Exception {
+    // Given
+    String redirectLocation = "http://localhost:8089/api/permanent-new-location";
+
+    wireMockServer.stubFor(
+        WireMock.put(urlEqualTo("/api/legacy"))
+            .willReturn(
+                aResponse()
+                    .withStatus(308)
+                    .withHeader("Location", redirectLocation)));
+
+    // When & Then
+    mockMvc
+        .perform(
+            put("/api/legacy")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"update\": \"data\"}"))
+        .andExpect(status().isPermanentRedirect())
+        .andExpect(header().string("Location", redirectLocation));
+
+    // Verify request was forwarded
+    wireMockServer.verify(putRequestedFor(urlEqualTo("/api/legacy")));
+  }
+
+  @Test
+  void shouldForwardRedirectWithAuthorizationHeader() throws Exception {
+    // Given
+    String redirectLocation = "http://localhost:8089/api/redirected";
+    String authToken = "Bearer secure-token-456";
+
+    wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/api/secure-redirect"))
+            .withHeader("Authorization", equalTo(authToken))
+            .willReturn(
+                aResponse()
+                    .withStatus(302)
+                    .withHeader("Location", redirectLocation)));
+
+    // When & Then
+    mockMvc
+        .perform(
+            get("/api/secure-redirect")
+                .header("Authorization", authToken))
+        .andExpect(status().isFound())
+        .andExpect(header().string("Location", redirectLocation));
+
+    // Verify Authorization header was forwarded
+    wireMockServer.verify(
+        getRequestedFor(urlEqualTo("/api/secure-redirect"))
+            .withHeader("Authorization", equalTo(authToken)));
   }
 }
