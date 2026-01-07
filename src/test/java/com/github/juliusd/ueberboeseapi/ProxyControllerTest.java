@@ -671,4 +671,208 @@ class ProxyControllerTest extends TestBase {
             .withHeader("X-Custom", equalTo("value1"))
             .withHeader("X-Custom", equalTo("value2")));
   }
+
+  @Test
+  void shouldForwardAuthorizationHeader() throws Exception {
+    // Given
+    String authToken = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.token";
+
+    wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/api/secure"))
+            .withHeader("Authorization", equalTo(authToken))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"message\": \"authenticated\"}")));
+
+    // When & Then
+    mockMvc
+        .perform(get("/api/secure").header("Authorization", authToken))
+        .andExpect(status().isOk())
+        .andExpect(content().json("{\"message\": \"authenticated\"}"));
+
+    // Verify Authorization header was forwarded
+    wireMockServer.verify(
+        getRequestedFor(urlEqualTo("/api/secure")).withHeader("Authorization", equalTo(authToken)));
+  }
+
+  @Test
+  void shouldForwardBasicAuthorizationHeaderButSpringSecurityIntercepts() throws Exception {
+    // Given
+    // Note: This test demonstrates that Spring Security intercepts requests with Authorization
+    // headers
+    // even for non-/mgmt/** endpoints when httpBasic is enabled in SecurityConfig.
+    // The header would be forwarded IF Spring Security didn't intercept first.
+    String basicAuth = "Basic dXNlcm5hbWU6cGFzc3dvcmQ=";
+
+    wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/api/authenticate"))
+            .withHeader("Authorization", equalTo(basicAuth))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"status\": \"success\"}")));
+
+    // When & Then
+    // Spring Security intercepts the request and returns 401 because the credentials
+    // don't match the configured user (ueberboese.mgmt.username/password)
+    mockMvc
+        .perform(
+            post("/api/authenticate")
+                .header("Authorization", basicAuth)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+        .andExpect(status().isUnauthorized()); // Spring Security returns 401
+
+    // Verify the request never reached WireMock because Spring Security blocked it
+    wireMockServer.verify(0, postRequestedFor(urlEqualTo("/api/authenticate")));
+  }
+
+  @Test
+  void shouldForwardCookieHeader() throws Exception {
+    // Given
+    String cookieValue = "sessionId=abc123; userId=user456; preferences=darkMode";
+
+    wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/api/profile"))
+            .withHeader("Cookie", equalTo(cookieValue))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"name\": \"Test User\"}")));
+
+    // When & Then
+    mockMvc
+        .perform(get("/api/profile").header("Cookie", cookieValue))
+        .andExpect(status().isOk())
+        .andExpect(content().json("{\"name\": \"Test User\"}"));
+
+    // Verify Cookie header was forwarded
+    wireMockServer.verify(
+        getRequestedFor(urlEqualTo("/api/profile")).withHeader("Cookie", equalTo(cookieValue)));
+  }
+
+  @Test
+  void shouldForwardUserAgentHeader() throws Exception {
+    // Given
+    String userAgent = "Foobar/5.0 (iOS; iPhone14,3; iOS 16.0)";
+
+    wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/api/device-info"))
+            .withHeader("User-Agent", equalTo(userAgent))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"compatible\": true}")));
+
+    // When & Then
+    mockMvc
+        .perform(get("/api/device-info").header("User-Agent", userAgent))
+        .andExpect(status().isOk())
+        .andExpect(content().json("{\"compatible\": true}"));
+
+    // Verify User-Agent header was forwarded
+    wireMockServer.verify(
+        getRequestedFor(urlEqualTo("/api/device-info"))
+            .withHeader("User-Agent", equalTo(userAgent)));
+  }
+
+  @Test
+  void shouldForwardAcceptLanguageHeader() throws Exception {
+    // Given
+    String acceptLanguage = "en-US,en;q=0.9,de;q=0.8";
+
+    wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/api/localized"))
+            .withHeader("Accept-Language", equalTo(acceptLanguage))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"greeting\": \"Hello\"}")));
+
+    // When & Then
+    mockMvc
+        .perform(get("/api/localized").header("Accept-Language", acceptLanguage))
+        .andExpect(status().isOk())
+        .andExpect(content().json("{\"greeting\": \"Hello\"}"));
+
+    // Verify Accept-Language header was forwarded
+    wireMockServer.verify(
+        getRequestedFor(urlEqualTo("/api/localized"))
+            .withHeader("Accept-Language", equalTo(acceptLanguage)));
+  }
+
+  @Test
+  void shouldForwardApiKeyHeader() throws Exception {
+    // Given
+    String apiKey = "X-API-Key-12345-ABCDEF";
+
+    wireMockServer.stubFor(
+        WireMock.post(urlEqualTo("/api/data"))
+            .withHeader("X-API-Key", equalTo(apiKey))
+            .willReturn(
+                aResponse()
+                    .withStatus(201)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"id\": \"created\"}")));
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/api/data")
+                .header("X-API-Key", apiKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"data\": \"test\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(content().json("{\"id\": \"created\"}"));
+
+    // Verify X-API-Key header was forwarded
+    wireMockServer.verify(
+        postRequestedFor(urlEqualTo("/api/data")).withHeader("X-API-Key", equalTo(apiKey)));
+  }
+
+  @Test
+  void shouldForwardMultipleSensitiveHeaders() throws Exception {
+    // Given
+    String authToken = "Bearer token123";
+    String cookieValue = "sessionId=xyz789";
+    String userAgent = "Foobar/5.0";
+    String apiKey = "secret-api-key";
+
+    wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/api/all-headers"))
+            .withHeader("Authorization", equalTo(authToken))
+            .withHeader("Cookie", equalTo(cookieValue))
+            .withHeader("User-Agent", equalTo(userAgent))
+            .withHeader("X-API-Key", equalTo(apiKey))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"status\": \"all headers received\"}")));
+
+    // When & Then
+    mockMvc
+        .perform(
+            get("/api/all-headers")
+                .header("Authorization", authToken)
+                .header("Cookie", cookieValue)
+                .header("User-Agent", userAgent)
+                .header("X-API-Key", apiKey))
+        .andExpect(status().isOk())
+        .andExpect(content().json("{\"status\": \"all headers received\"}"));
+
+    // Verify all sensitive headers were forwarded
+    wireMockServer.verify(
+        getRequestedFor(urlEqualTo("/api/all-headers"))
+            .withHeader("Authorization", equalTo(authToken))
+            .withHeader("Cookie", equalTo(cookieValue))
+            .withHeader("User-Agent", equalTo(userAgent))
+            .withHeader("X-API-Key", equalTo(apiKey)));
+  }
 }
