@@ -272,10 +272,10 @@ public class ProxyService {
             headerName -> {
               // Skip certain headers that shouldn't be forwarded
               if (shouldForwardHeader(headerName)) {
-                String headerValue = request.getHeader(headerName);
-                if (headerValue != null) {
-                  targetHeaders.add(headerName, headerValue);
-                }
+                var headerValues = request.getHeaders(headerName);
+                headerValues
+                    .asIterator()
+                    .forEachRemaining(headerValue -> targetHeaders.add(headerName, headerValue));
               }
             });
   }
@@ -300,8 +300,16 @@ public class ProxyService {
         .asIterator()
         .forEachRemaining(
             headerName -> {
-              String headerValue = request.getHeader(headerName);
-              headers.append("\n    ").append(headerName).append(": ").append(headerValue);
+              var headerValues = request.getHeaders(headerName);
+              headerValues
+                  .asIterator()
+                  .forEachRemaining(
+                      headerValue ->
+                          headers
+                              .append("\n    ")
+                              .append(headerName)
+                              .append(": ")
+                              .append(headerValue));
             });
     return headers.toString();
   }

@@ -636,4 +636,39 @@ class ProxyControllerTest extends TestBase {
     statsWireMockServer.verify(0, getRequestedFor(urlEqualTo("/api/other")));
     bmxRegistryWireMockServer.verify(0, getRequestedFor(urlEqualTo("/api/other")));
   }
+
+  @Test
+  void shouldForwardMultiValuedHeaders() throws Exception {
+    // Given
+    wireMockServer.stubFor(
+        WireMock.get(urlEqualTo("/api/multi-header"))
+            .withHeader("Accept", equalTo("text/html"))
+            .withHeader("Accept", equalTo("application/xml"))
+            .withHeader("X-Custom", equalTo("value1"))
+            .withHeader("X-Custom", equalTo("value2"))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"message\": \"multi-header test\"}")));
+
+    // When & Then
+    mockMvc
+        .perform(
+            get("/api/multi-header")
+                .header("Accept", "text/html")
+                .header("Accept", "application/xml")
+                .header("X-Custom", "value1")
+                .header("X-Custom", "value2"))
+        .andExpect(status().isOk())
+        .andExpect(content().json("{\"message\": \"multi-header test\"}"));
+
+    // Verify all header values were forwarded
+    wireMockServer.verify(
+        getRequestedFor(urlEqualTo("/api/multi-header"))
+            .withHeader("Accept", equalTo("text/html"))
+            .withHeader("Accept", equalTo("application/xml"))
+            .withHeader("X-Custom", equalTo("value1"))
+            .withHeader("X-Custom", equalTo("value2")));
+  }
 }
