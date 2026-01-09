@@ -29,6 +29,12 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
       @NonNull FilterChain filterChain)
       throws ServletException, IOException {
 
+    // Always log request method and URI with query parameters
+    String uri = request.getRequestURI();
+    String queryString = request.getQueryString();
+    String fullUri = queryString != null ? uri + "?" + queryString : uri;
+    log.info("Request: {} {}", request.getMethod(), fullUri);
+
     // Only wrap and log for event endpoints
     if (request.getRequestURI().matches(".*/v1/scmudc/.*")) {
       // Wrap request with content size limit of 1MB
