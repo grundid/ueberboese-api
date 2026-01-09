@@ -1,0 +1,407 @@
+package com.github.juliusd.ueberboeseapi.bmx;
+
+import static tools.jackson.databind.json.JsonMapper.builder;
+
+import com.github.juliusd.ueberboeseapi.generated.dtos.BmxAudioApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.BmxLinkApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.BmxLinkWithClientApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.BmxLinksApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.BmxPlaybackResponseApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.BmxReportResponseApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.BmxServiceApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.BmxServiceAssetsApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.BmxServiceIconsApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.BmxServiceIdApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.BmxServicesResponseApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.BmxStreamApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.BmxTokenResponseApiDto;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.json.JsonMapper;
+
+/** Service for handling BMX operations including TuneIn integration and custom streams. */
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class BmxService {
+
+  private final TuneInClient tuneInClient;
+  private final UeberboeseApiUrlProperties urlProperties;
+
+  private final JsonMapper jsonMapper = builder().findAndAddModules().build();
+
+  /**
+   * Creates and returns the BMX services registry.
+   *
+   * @return BMX services response with all service definitions
+   */
+  public BmxServicesResponseApiDto getBmxServices() {
+    log.info("Building BMX services registry");
+
+    // Create top-level links
+    BmxLinksApiDto topLinks = new BmxLinksApiDto();
+    BmxLinkApiDto availabilityLink = new BmxLinkApiDto("../servicesAvailability");
+    topLinks.setBmxServicesAvailability(availabilityLink);
+
+    // Create services list
+    List<BmxServiceApiDto> services =
+        List.of(
+            createTuneInService(),
+            createLocalInternetRadioService(),
+            createSiriusXmService(),
+            createRadioplayerService());
+
+    // Build response
+    BmxServicesResponseApiDto response = new BmxServicesResponseApiDto();
+    response.setLinks(topLinks);
+    response.setAskAgainAfter(1234567);
+    response.setBmxServices(services);
+
+    return response;
+  }
+
+  /** Creates the TuneIn service definition. */
+  private BmxServiceApiDto createTuneInService() {
+    BmxServiceIdApiDto id = new BmxServiceIdApiDto("TUNEIN", 25);
+    BmxServiceAssetsApiDto assets = extractTuneInAssets();
+    Map<String, Object> authModel = createAuthModel();
+    BmxLinksApiDto serviceLinks = new BmxLinksApiDto();
+    serviceLinks.setBmxNavigate(new BmxLinkApiDto("/v1/navigate"));
+    serviceLinks.setBmxToken(new BmxLinkApiDto("/v1/token"));
+
+    BmxServiceApiDto service =
+        new BmxServiceApiDto(
+            assets,
+            authModel,
+            urlProperties.baseUrl() + "/bmx/tunein",
+            id,
+            List.of(
+                BmxServiceApiDto.StreamTypesEnum.LIVE_RADIO,
+                BmxServiceApiDto.StreamTypesEnum.ON_DEMAND));
+    service.setLinks(serviceLinks);
+
+    return service;
+  }
+
+  private static @NonNull Map<String, Object> createAuthModel() {
+    Map<String, Object> authModel = new LinkedHashMap<>();
+    Map<String, Object> anonymousAccount = new LinkedHashMap<>();
+    anonymousAccount.put("autoCreate", true);
+    anonymousAccount.put("enabled", true);
+    authModel.put("anonymousAccount", anonymousAccount);
+    return authModel;
+  }
+
+  private static @NonNull BmxServiceAssetsApiDto extractTuneInAssets() {
+    BmxServiceIconsApiDto icons =
+        new BmxServiceIconsApiDto(
+            "https://donpvpd81xeci.cloudfront.net/icons/large.svg",
+            "https://donpvpd81xeci.cloudfront.net/icons/monochrome.png",
+            "https://donpvpd81xeci.cloudfront.net/icons/monochrome.svg",
+            "https://donpvpd81xeci.cloudfront.net/icons/small.svg");
+    icons.setDefaultAlbumArt("https://donpvpd81xeci.cloudfront.net/defaultAlbumArt.png");
+
+    return new BmxServiceAssetsApiDto(
+        "#000000",
+        "With TuneIn on SoundTouch, listen to more than 100,000 stations worldwide.",
+        icons,
+        "TuneIn");
+  }
+
+  /** Creates the Local Internet Radio (Custom Stations) service definition. */
+  private BmxServiceApiDto createLocalInternetRadioService() {
+    BmxServiceIdApiDto id = new BmxServiceIdApiDto("LOCAL_INTERNET_RADIO", 11);
+
+    BmxServiceIconsApiDto icons =
+        new BmxServiceIconsApiDto(
+            "https://d11hhn06c3zsgm.cloudfront.net/icons/large.svg",
+            "https://d11hhn06c3zsgm.cloudfront.net/icons/monochrome.png",
+            "https://d11hhn06c3zsgm.cloudfront.net/icons/monochrome.svg",
+            "https://d11hhn06c3zsgm.cloudfront.net/icons/small.svg");
+    icons.setDefaultAlbumArt("https://d11hhn06c3zsgm.cloudfront.net/defaultAlbumArt.png");
+
+    BmxServiceAssetsApiDto assets =
+        new BmxServiceAssetsApiDto(
+            "#282828",
+            "Custom radio stations that you've added through the SoundTouch app.",
+            icons,
+            "Custom Stations");
+
+    Map<String, Object> authModel = createAuthModel();
+
+    return new BmxServiceApiDto(
+        assets,
+        authModel,
+        urlProperties.baseUrl() + "/core02/svc-bmx-adapter-orion/prod/orion",
+        id,
+        List.of(BmxServiceApiDto.StreamTypesEnum.LIVE_RADIO));
+  }
+
+  /** Creates the SiriusXM service definition. */
+  private BmxServiceApiDto createSiriusXmService() {
+    BmxServiceIdApiDto id = new BmxServiceIdApiDto("SIRIUSXM_EVEREST", 38);
+
+    BmxServiceAssetsApiDto assets = createSiriusAssets();
+
+    Map<String, Object> authModel = new HashMap<>();
+    authModel.put("loginPageProvider", "BOSE");
+
+    BmxLinksApiDto serviceLinks = new BmxLinksApiDto();
+    serviceLinks.setBmxNavigate(new BmxLinkApiDto("/v1/navigate"));
+    serviceLinks.setBmxToken(new BmxLinkApiDto("/v1/token"));
+
+    BmxServiceApiDto service =
+        new BmxServiceApiDto(
+            assets,
+            authModel,
+            "https://everestapi.us.siriusxm.com",
+            id,
+            List.of(
+                BmxServiceApiDto.StreamTypesEnum.LIVE_RADIO,
+                BmxServiceApiDto.StreamTypesEnum.ON_DEMAND));
+    service.setLinks(serviceLinks);
+    service.setSignupUrl("https://care.siriusxm.com/subscribe_link.action?sourceCode=SXMZ44");
+
+    return service;
+  }
+
+  private static @NonNull BmxServiceAssetsApiDto createSiriusAssets() {
+    BmxServiceIconsApiDto icons =
+        new BmxServiceIconsApiDto(
+            "https://d3h9hdqyx8kz3e.cloudfront.net/icons/large.svg",
+            "https://d3h9hdqyx8kz3e.cloudfront.net/icons/monochrome.png",
+            "https://d3h9hdqyx8kz3e.cloudfront.net/icons/monochrome.svg",
+            "https://d3h9hdqyx8kz3e.cloudfront.net/icons/small.svg");
+
+    return new BmxServiceAssetsApiDto(
+        "#004b85",
+        "SiriusXM brings over 150 channels of commercial-free music, plus talk, sports, news, and comedy.",
+        icons,
+        "SiriusXM");
+  }
+
+  /** Creates the Radioplayer service definition. */
+  private BmxServiceApiDto createRadioplayerService() {
+    BmxServiceIdApiDto id = new BmxServiceIdApiDto("RADIOPLAYER", 35);
+
+    BmxServiceAssetsApiDto assets = createRadioplayerAssets();
+
+    Map<String, Object> authModel = new HashMap<>();
+    Map<String, Object> anonymousAccount = new HashMap<>();
+    anonymousAccount.put("autoCreate", false);
+    anonymousAccount.put("enabled", true);
+    authModel.put("anonymousAccount", anonymousAccount);
+
+    BmxLinksApiDto serviceLinks = new BmxLinksApiDto();
+    serviceLinks.setBmxNavigate(new BmxLinkApiDto("/v1/navigate"));
+    serviceLinks.setBmxToken(new BmxLinkApiDto("/v1/token"));
+
+    BmxServiceApiDto service =
+        new BmxServiceApiDto(
+            assets,
+            authModel,
+            "https://boserp.radioapi.io",
+            id,
+            List.of(
+                BmxServiceApiDto.StreamTypesEnum.LIVE_RADIO,
+                BmxServiceApiDto.StreamTypesEnum.ON_DEMAND));
+    service.setLinks(serviceLinks);
+
+    return service;
+  }
+
+  private static @NonNull BmxServiceAssetsApiDto createRadioplayerAssets() {
+    BmxServiceIconsApiDto icons =
+        new BmxServiceIconsApiDto(
+            "https://d2lrvc01fwh9p2.cloudfront.net/icons/large.svg",
+            "https://d2lrvc01fwh9p2.cloudfront.net/icons/monochrome.png",
+            "https://d2lrvc01fwh9p2.cloudfront.net/icons/monochrome.svg",
+            "https://d2lrvc01fwh9p2.cloudfront.net/icons/small.svg");
+
+    return new BmxServiceAssetsApiDto(
+        "#cc0033",
+        "Radioplayer brings thousands of live and on-demand radio stations from around the world.",
+        icons,
+        "Radioplayer");
+  }
+
+  /**
+   * Fetches TuneIn station playback information.
+   *
+   * @param stationId TuneIn station ID (e.g., "s80044")
+   * @return Playback response with stream URLs and metadata
+   */
+  public BmxPlaybackResponseApiDto getTuneInPlayback(String stationId) {
+    log.info("Getting TuneIn playback for stationId: {}", stationId);
+
+    // Fetch metadata and stream URLs from TuneIn
+    TuneInClient.StationMetadata metadata = tuneInClient.getStationMetadata(stationId);
+    List<String> streamUrls = tuneInClient.getStreamUrls(stationId);
+
+    if (streamUrls.isEmpty()) {
+      throw new RuntimeException("No stream URLs available for station: " + stationId);
+    }
+
+    // Build response
+    BmxPlaybackResponseApiDto response = new BmxPlaybackResponseApiDto();
+
+    // Set links
+    BmxLinksApiDto links = new BmxLinksApiDto();
+    BmxLinkApiDto favoriteLink = new BmxLinkApiDto();
+    favoriteLink.setHref("/v1/favorite/" + stationId);
+    links.setBmxFavorite(favoriteLink);
+
+    BmxLinkWithClientApiDto nowPlayingLink = new BmxLinkWithClientApiDto();
+    nowPlayingLink.setHref("/v1/now-playing/station/" + stationId);
+    nowPlayingLink.setUseInternalClient(BmxLinkWithClientApiDto.UseInternalClientEnum.ALWAYS);
+    links.setBmxNowplaying(nowPlayingLink);
+
+    // Generate IDs for reporting (these are placeholder values)
+    String streamId = "e3342";
+    String listenId = String.valueOf(System.currentTimeMillis());
+    String reportingHref =
+        String.format(
+            "/v1/report?stream_id=%s&guide_id=%s&listen_id=%s&stream_type=liveRadio",
+            streamId, stationId, listenId);
+    BmxLinkApiDto reportingLink = new BmxLinkApiDto();
+    reportingLink.setHref(reportingHref);
+    links.setBmxReporting(reportingLink);
+
+    response.setLinks(links);
+
+    // Set audio with streams
+    BmxAudioApiDto audio = new BmxAudioApiDto();
+    audio.setHasPlaylist(true);
+    audio.setIsRealtime(true);
+    audio.setMaxTimeout(60);
+    audio.setStreamUrl(streamUrls.getFirst()); // Primary stream URL
+
+    // Create stream objects for each URL
+    List<BmxStreamApiDto> streams =
+        streamUrls.stream()
+            .map(
+                url -> {
+                  BmxStreamApiDto stream = new BmxStreamApiDto();
+                  BmxLinksApiDto streamLinks = new BmxLinksApiDto();
+                  streamLinks.setBmxReporting(reportingLink);
+                  stream.setLinks(streamLinks);
+                  stream.setBufferingTimeout(20);
+                  stream.setConnectingTimeout(10);
+                  stream.setHasPlaylist(true);
+                  stream.setIsRealtime(true);
+                  stream.setStreamUrl(url);
+                  return stream;
+                })
+            .toList();
+
+    audio.setStreams(streams);
+    response.setAudio(audio);
+
+    // Set metadata
+    response.setImageUrl(metadata.getLogo());
+    response.setIsFavorite(false);
+    response.setName(metadata.getName());
+    response.setStreamType(BmxPlaybackResponseApiDto.StreamTypeEnum.LIVE_RADIO);
+
+    log.info("Built TuneIn playback response for station: {}", metadata.getName());
+    return response;
+  }
+
+  /**
+   * Decodes and processes custom stream data.
+   *
+   * @param base64Data Base64-encoded JSON containing streamUrl, imageUrl, and name
+   * @return Playback response for custom stream
+   */
+  public BmxPlaybackResponseApiDto getCustomStreamPlayback(String base64Data) {
+    log.info("Processing custom stream data");
+
+    try {
+      // Decode base64
+      byte[] decodedBytes = Base64.getDecoder().decode(base64Data);
+      String jsonString = new String(decodedBytes, StandardCharsets.UTF_8);
+
+      // Parse JSON
+      @SuppressWarnings("unchecked")
+      Map<String, String> streamData = jsonMapper.readValue(jsonString, Map.class);
+
+      String streamUrl = streamData.get("streamUrl");
+      String imageUrl = streamData.get("imageUrl");
+      String name = streamData.get("name");
+
+      if (streamUrl == null || streamUrl.isEmpty()) {
+        throw new IllegalArgumentException("streamUrl is required in custom stream data");
+      }
+
+      // Build response
+      BmxPlaybackResponseApiDto response = new BmxPlaybackResponseApiDto();
+
+      // Set audio
+      BmxAudioApiDto audio = new BmxAudioApiDto();
+      audio.setHasPlaylist(true);
+      audio.setIsRealtime(true);
+      audio.setStreamUrl(streamUrl);
+
+      // Create single stream
+      BmxStreamApiDto stream = new BmxStreamApiDto();
+      stream.setHasPlaylist(true);
+      stream.setIsRealtime(true);
+      stream.setStreamUrl(streamUrl);
+      audio.setStreams(List.of(stream));
+
+      response.setAudio(audio);
+
+      // Set metadata
+      response.setImageUrl(imageUrl != null ? imageUrl : "");
+      response.setName(name != null ? name : "Custom Stream");
+      response.setStreamType(BmxPlaybackResponseApiDto.StreamTypeEnum.LIVE_RADIO);
+
+      log.info("Built custom stream playback response for: {}", name);
+      return response;
+
+    } catch (Exception e) {
+      log.error("Failed to process custom stream data", e);
+      throw new RuntimeException("Failed to process custom stream data", e);
+    }
+  }
+
+  /**
+   * Refreshes TuneIn authentication token. This is a stub implementation that returns the same
+   * token.
+   *
+   * @param refreshToken Refresh token
+   * @return Token response with access token
+   */
+  public BmxTokenResponseApiDto refreshTuneInToken(String refreshToken) {
+    log.info("Refreshing TuneIn token (stub implementation)");
+
+    // Stub implementation - just return the refresh token as access token
+    // In a real implementation, you would call TuneIn's token endpoint
+    BmxTokenResponseApiDto response = new BmxTokenResponseApiDto();
+    response.setAccessToken(refreshToken);
+
+    return response;
+  }
+
+  /**
+   * Handles analytics reporting. This is a stub implementation that logs and returns OK.
+   *
+   * @return Report response
+   */
+  public BmxReportResponseApiDto reportAnalytics() {
+    log.info("Received analytics report (stub implementation)");
+
+    BmxReportResponseApiDto response = new BmxReportResponseApiDto();
+    response.setNextReportIn(1800); // Report again in 30 minutes
+
+    return response;
+  }
+}

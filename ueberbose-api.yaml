@@ -859,6 +859,217 @@ paths:
         '500':
           description: Server Error
 
+  /bmx/registry/v1/services:
+    get:
+      summary: Get BMX services registry
+      description: |
+        Returns the list of available BMX streaming services (TuneIn, Custom Stations, SiriusXM, Radioplayer).
+        This endpoint provides service discovery for streaming audio providers.
+      operationId: getBmxServices
+      tags:
+        - bmx
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successful response with list of BMX services
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/json
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BmxServicesResponse'
+        '401':
+          description: Unauthorized - Invalid or missing Bearer token
+        '500':
+          description: Internal server error
+
+  /bmx/tunein/v1/playback/station/{stationId}:
+    get:
+      summary: Get TuneIn station playback information
+      description: |
+        Returns stream URLs and metadata for a TuneIn radio station.
+        Fetches real-time data from TuneIn APIs including available stream URLs,
+        station name, logo, and playback configuration.
+      operationId: getTuneInPlayback
+      tags:
+        - bmx
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: stationId
+          in: path
+          required: true
+          description: TuneIn station identifier (e.g., 's80044')
+          schema:
+            type: string
+            example: "s80044"
+      responses:
+        '200':
+          description: Successful response with station playback information
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/json
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BmxPlaybackResponse'
+        '401':
+          description: Unauthorized - Invalid or missing Bearer token
+        '404':
+          description: Station not found
+        '500':
+          description: Internal server error
+
+  /core02/svc-bmx-adapter-orion/prod/orion/station:
+    get:
+      summary: Get custom stream playback information
+      description: |
+        Returns playback information for custom radio streams.
+        The stream data is provided as base64-encoded JSON in the 'data' query parameter.
+        Supports user-defined radio station URLs.
+      operationId: getCustomStreamPlayback
+      tags:
+        - bmx
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: data
+          in: query
+          required: true
+          description: |
+            Base64-encoded JSON containing stream information.
+            JSON structure: {"streamUrl": "...", "imageUrl": "...", "name": "..."}
+          schema:
+            type: string
+            example: "eyJzdHJlYW1VcmwiOiJodHRwOi8vZXhhbXBsZS5jb20vc3RyZWFtIiwiaW1hZ2VVcmwiOiJodHRwOi8vZXhhbXBsZS5jb20vaW1nLnBuZyIsIm5hbWUiOiJUZXN0IFN0YXRpb24ifQ=="
+      responses:
+        '200':
+          description: Successful response with custom stream playback information
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/json
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BmxPlaybackResponse'
+        '400':
+          description: Bad request - Invalid or missing data parameter
+        '401':
+          description: Unauthorized - Invalid or missing Bearer token
+        '500':
+          description: Internal server error
+
+  /bmx/tunein/v1/token:
+    post:
+      summary: Refresh TuneIn authentication token
+      description: |
+        Refreshes a TuneIn JWT authentication token using a refresh token.
+        Required for maintaining access to TuneIn authenticated features.
+      operationId: refreshTuneInToken
+      tags:
+        - bmx
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BmxTokenRequest'
+            example:
+              grant_type: "refresh_token"
+              refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Token refreshed successfully
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/json
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BmxTokenResponse'
+        '400':
+          description: Bad request - Invalid request body
+        '401':
+          description: Unauthorized - Invalid or expired refresh token
+        '500':
+          description: Internal server error
+
+  /bmx/tunein/v1/report:
+    post:
+      summary: Report TuneIn analytics
+      description: |
+        Analytics endpoint for reporting playback events to TuneIn.
+        This is a stub implementation that accepts and logs events but does not forward them.
+      operationId: reportTuneInAnalytics
+      tags:
+        - bmx
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: stream_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: guide_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: listen_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: stream_type
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "liveRadio"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BmxReportRequest'
+            example:
+              timeStamp: "2025-10-31T05:38:55+0000"
+              eventType: "START"
+              reason: "USER_SELECT_PLAYABLE"
+              timeIntoTrack: 0
+              playbackDelay: 6664
+      responses:
+        '200':
+          description: Analytics event received
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/json
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BmxReportResponse'
+        '400':
+          description: Bad request - Invalid request body
+        '401':
+          description: Unauthorized - Invalid or missing Bearer token
+        '500':
+          description: Internal server error
+
 components:
   securitySchemes:
     BearerAuth:
@@ -1905,3 +2116,350 @@ components:
           type: string
           description: Event type identifier
           example: "source-state-changed"
+
+    # BMX Schemas
+    BmxServicesResponse:
+      type: object
+      description: JSON response containing list of BMX services
+      required:
+        - _links
+        - askAgainAfter
+        - bmx_services
+      properties:
+        _links:
+          $ref: '#/components/schemas/BmxLinks'
+        askAgainAfter:
+          type: integer
+          description: Milliseconds until client should request service list again
+          example: 1230482
+        bmx_services:
+          type: array
+          description: List of available BMX streaming services
+          items:
+            $ref: '#/components/schemas/BmxService'
+
+    BmxLinks:
+      type: object
+      description: HAL-style links for BMX responses
+      properties:
+        bmx_services_availability:
+          $ref: '#/components/schemas/BmxLink'
+        bmx_logout:
+          $ref: '#/components/schemas/BmxLink'
+        bmx_navigate:
+          $ref: '#/components/schemas/BmxLink'
+        bmx_token:
+          $ref: '#/components/schemas/BmxLink'
+        bmx_favorite:
+          $ref: '#/components/schemas/BmxLink'
+        bmx_nowplaying:
+          $ref: '#/components/schemas/BmxLinkWithClient'
+        bmx_reporting:
+          $ref: '#/components/schemas/BmxLink'
+        bmx_availability:
+          $ref: '#/components/schemas/BmxLink'
+        self:
+          $ref: '#/components/schemas/BmxLink'
+
+    BmxLink:
+      type: object
+      description: HAL-style link
+      required:
+        - href
+      properties:
+        href:
+          type: string
+          description: Link URL
+          example: "/v1/navigate"
+
+    BmxLinkWithClient:
+      type: object
+      description: HAL-style link with client usage hint
+      required:
+        - href
+      properties:
+        href:
+          type: string
+          description: Link URL
+          example: "/v1/now-playing/station/s80044"
+        useInternalClient:
+          type: string
+          description: When to use internal client
+          enum: ["ALWAYS", "NEVER", "FALLBACK"]
+          example: "ALWAYS"
+
+    BmxService:
+      type: object
+      description: BMX streaming service definition
+      required:
+        - id
+        - assets
+        - baseUrl
+        - streamTypes
+        - authenticationModel
+      properties:
+        _links:
+          $ref: '#/components/schemas/BmxLinks'
+        askAdapter:
+          type: boolean
+          description: Whether to ask adapter for service info
+          example: false
+        assets:
+          $ref: '#/components/schemas/BmxServiceAssets'
+        authenticationModel:
+          type: object
+          description: Authentication model for the service
+          additionalProperties: true
+          example:
+            anonymousAccount:
+              autoCreate: true
+              enabled: true
+        baseUrl:
+          type: string
+          description: Base URL for service API calls
+          example: "https://localhost:8080/bmx/tunein"
+        id:
+          $ref: '#/components/schemas/BmxServiceId'
+        signupUrl:
+          type: string
+          description: URL for user signup (optional)
+          example: "https://www.tunein.com/signup"
+        streamTypes:
+          type: array
+          description: Types of streams supported
+          items:
+            type: string
+            enum: ["liveRadio", "onDemand"]
+          example: ["liveRadio", "onDemand"]
+
+    BmxServiceId:
+      type: object
+      description: Service identifier
+      required:
+        - name
+        - value
+      properties:
+        name:
+          type: string
+          description: Service name
+          example: "TUNEIN"
+        value:
+          type: integer
+          description: Numeric service ID
+          example: 25
+
+    BmxServiceAssets:
+      type: object
+      description: Service branding assets
+      required:
+        - color
+        - description
+        - icons
+        - name
+      properties:
+        color:
+          type: string
+          description: Brand color in hex format
+          example: "#000000"
+        description:
+          type: string
+          description: Service description
+          example: "With TuneIn on SoundTouch, listen to more than 100,000 stations"
+        icons:
+          $ref: '#/components/schemas/BmxServiceIcons'
+        name:
+          type: string
+          description: Service display name
+          example: "TuneIn"
+        shortDescription:
+          type: string
+          description: Short service description (optional)
+          example: "Over 100,000 radio stations"
+
+    BmxServiceIcons:
+      type: object
+      description: Icon URLs for service
+      required:
+        - largeSvg
+        - monochromePng
+        - monochromeSvg
+        - smallSvg
+      properties:
+        defaultAlbumArt:
+          type: string
+          description: Default album art URL
+          example: "https://cdn.example.com/default-art.png"
+        largeSvg:
+          type: string
+          description: Large SVG icon URL
+          example: "https://cdn.example.com/large.svg"
+        monochromePng:
+          type: string
+          description: Monochrome PNG icon URL
+          example: "https://cdn.example.com/mono.png"
+        monochromeSvg:
+          type: string
+          description: Monochrome SVG icon URL
+          example: "https://cdn.example.com/mono.svg"
+        smallSvg:
+          type: string
+          description: Small SVG icon URL
+          example: "https://cdn.example.com/small.svg"
+
+    BmxPlaybackResponse:
+      type: object
+      description: JSON response containing playback information
+      required:
+        - audio
+        - imageUrl
+        - name
+        - streamType
+      properties:
+        _links:
+          $ref: '#/components/schemas/BmxLinks'
+        audio:
+          $ref: '#/components/schemas/BmxAudio'
+        imageUrl:
+          type: string
+          description: Station/stream logo URL
+          example: "http://cdn-profiles.tunein.com/s80044/images/logog.png"
+        isFavorite:
+          type: boolean
+          description: Whether station is marked as favorite
+          example: false
+        name:
+          type: string
+          description: Station/stream name
+          example: "Radio TEDDY"
+        streamType:
+          type: string
+          description: Type of stream
+          enum: ["liveRadio", "onDemand"]
+          example: "liveRadio"
+
+    BmxAudio:
+      type: object
+      description: Audio stream configuration
+      required:
+        - hasPlaylist
+        - isRealtime
+        - streamUrl
+        - streams
+      properties:
+        hasPlaylist:
+          type: boolean
+          description: Whether stream is a playlist
+          example: true
+        isRealtime:
+          type: boolean
+          description: Whether stream is realtime
+          example: true
+        maxTimeout:
+          type: integer
+          description: Maximum timeout in seconds
+          example: 60
+        streamUrl:
+          type: string
+          description: Primary stream URL
+          example: "https://stream.example.com/radio"
+        streams:
+          type: array
+          description: List of available streams
+          items:
+            $ref: '#/components/schemas/BmxStream'
+
+    BmxStream:
+      type: object
+      description: Individual stream definition
+      required:
+        - hasPlaylist
+        - isRealtime
+        - streamUrl
+      properties:
+        _links:
+          $ref: '#/components/schemas/BmxLinks'
+        bufferingTimeout:
+          type: integer
+          description: Buffering timeout in seconds
+          example: 20
+        connectingTimeout:
+          type: integer
+          description: Connection timeout in seconds
+          example: 10
+        hasPlaylist:
+          type: boolean
+          description: Whether stream is a playlist
+          example: true
+        isRealtime:
+          type: boolean
+          description: Whether stream is realtime
+          example: true
+        streamUrl:
+          type: string
+          description: Stream URL
+          example: "https://stream.example.com/radio"
+
+    BmxTokenRequest:
+      type: object
+      description: Token refresh request
+      required:
+        - grant_type
+        - refresh_token
+      properties:
+        grant_type:
+          type: string
+          description: OAuth grant type
+          enum: ["refresh_token"]
+          example: "refresh_token"
+        refresh_token:
+          type: string
+          description: Refresh token to exchange for access token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    BmxTokenResponse:
+      type: object
+      description: Token refresh response
+      required:
+        - access_token
+      properties:
+        access_token:
+          type: string
+          description: New access token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    BmxReportRequest:
+      type: object
+      description: Analytics report request
+      properties:
+        timeStamp:
+          type: string
+          description: Timestamp of the event
+          example: "2025-10-31T05:38:55+0000"
+        eventType:
+          type: string
+          description: Type of event
+          enum: ["START", "STOP", "PAUSE", "RESUME"]
+          example: "START"
+        reason:
+          type: string
+          description: Reason for the event
+          example: "USER_SELECT_PLAYABLE"
+        timeIntoTrack:
+          type: integer
+          description: Time into track in seconds
+          example: 0
+        playbackDelay:
+          type: integer
+          description: Playback delay in milliseconds
+          example: 6664
+
+    BmxReportResponse:
+      type: object
+      description: Analytics report response
+      properties:
+        _links:
+          $ref: '#/components/schemas/BmxLinks'
+        nextReportIn:
+          type: integer
+          description: Seconds until next report should be sent
+          example: 1800

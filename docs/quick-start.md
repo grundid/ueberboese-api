@@ -310,6 +310,8 @@ curl http://localhost:8081/actuator/health
 | `UEBERBOESE_MGMT_PASSWORD`          | `change_me!`                      | Password for Basic Auth on `/mgmt/**` endpoints (change this!)                   |
 | `SPOTIFY_AUTH_CLIENT_ID`            | -                                 | Spotify API client ID from developer dashboard (required for OAuth)              |
 | `SPOTIFY_AUTH_CLIENT_SECRET`        | -                                 | Spotify API client secret from developer dashboard (required for OAuth)          |
+| `UEBERBOESE_BMX_ENABLED`            | `false`                           | Enable BMX streaming endpoints (TuneIn, custom streams)                          |
+| `UEBERBOESE_BMX_BASE_URL`           | `http://localhost:8080`           | Base URL for BMX services (used in service registry)                             |
 | `SERVER_PORT`                       | `8080`                            | Port the main application runs on                                                |
 | `MANAGEMENT_SERVER_PORT`            | `8081`                            | Port for actuator/management endpoints                                           |
 
