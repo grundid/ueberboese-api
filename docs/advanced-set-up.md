@@ -20,7 +20,7 @@ so here is step-by-step guide to preparing your USB stick.
 ### ⚠️ Warning
 
 **This process deletes all data on the USB stick.**
-Identify your USB drive letter carefully (e.g., `sdb`, `sdc`). 
+Identify your USB drive letter carefully (e.g., `sdb`, `sdc`).
 In this guide, we use **`sdX`**. Replace `X` with your actual letter.
 
 ---
