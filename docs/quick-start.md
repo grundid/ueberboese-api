@@ -230,6 +230,12 @@ This will list all connected Spotify accounts.
 
 **Important:** You must connect at least one Spotify account via the management API or companion app before your SoundTouch devices can use Spotify. The API will automatically use the first connected account.
 
+## Step 6 (completely optional)
+
+With the help of a USB-Stick you can take even more control of your speaker.
+
+[Do the advanced setup](advanced-set-up.md)
+
 ## Troubleshooting
 
 ### Update to Latest Version
