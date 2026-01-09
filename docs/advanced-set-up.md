@@ -4,8 +4,6 @@ title: Advanced setup
 description: Step-by-step guide for advanced setup of Überböse API
 ---
 
-## Advanced setup
-
 As described [here](https://flarn2006.blogspot.com/2014/09/hacking-bose-soundtouch-and-its-linux.html)
 and [here](https://github.com/deborahgu/soundcork)
 you can get a root shell into your speaker when you plug in a USB stick with an empty file called `remote_services`.
