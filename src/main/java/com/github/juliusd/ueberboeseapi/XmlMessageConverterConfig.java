@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverters;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -32,15 +33,23 @@ public class XmlMessageConverterConfig implements WebMvcConfigurer {
     var xmlConverter = new MappingJackson2XmlHttpMessageConverter(customXmlMapper());
 
     // Configure to ONLY handle XML media types (don't interfere with JSON)
-    List<MediaType> supportedMediaTypes = new ArrayList<>();
-    supportedMediaTypes.add(MediaType.APPLICATION_XML);
-    supportedMediaTypes.add(MediaType.TEXT_XML);
-    supportedMediaTypes.add(MediaType.parseMediaType("application/vnd.bose.streaming-v1.2+xml"));
-    xmlConverter.setSupportedMediaTypes(supportedMediaTypes);
+    List<MediaType> xmlMediaTypes = new ArrayList<>();
+    xmlMediaTypes.add(MediaType.APPLICATION_XML);
+    xmlMediaTypes.add(MediaType.TEXT_XML);
+    xmlMediaTypes.add(MediaType.parseMediaType("application/vnd.bose.streaming-v1.2+xml"));
+    xmlConverter.setSupportedMediaTypes(xmlMediaTypes);
 
-    // Add byte array and XML converters
+    // Configure JSON converter to also handle text/json media type (used by Bose devices)
+    var jsonConverter = new JacksonJsonHttpMessageConverter();
+    List<MediaType> jsonMediaTypes = new ArrayList<>();
+    jsonMediaTypes.add(MediaType.APPLICATION_JSON);
+    jsonMediaTypes.add(MediaType.parseMediaType("text/json"));
+    jsonConverter.setSupportedMediaTypes(jsonMediaTypes);
+
+    // Add byte array, JSON, and XML converters
     builder
         .addCustomConverter(new ByteArrayHttpMessageConverter())
+        .addCustomConverter(jsonConverter)
         .addCustomConverter(xmlConverter);
   }
 

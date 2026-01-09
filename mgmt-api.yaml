@@ -355,6 +355,74 @@ paths:
                     error: "Not found"
                     message: "Account data not found for the specified account ID"
 
+  /mgmt/devices/{deviceId}/events:
+    get:
+      summary: Get events for a device
+      description: |
+        Retrieves all events that have been received for a specific device.
+        Events are stored in-memory and include playback state changes, source changes, button presses, and more.
+      operationId: getDeviceEvents
+      tags:
+        - Event Management
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: The device ID to retrieve events for
+          schema:
+            type: string
+            example: "587A628A4042"
+      responses:
+        '200':
+          description: Successfully retrieved list of events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDeviceEvents200Response'
+              examples:
+                withEvents:
+                  summary: Response with events
+                  value:
+                    events:
+                      - envelope:
+                          monoTime: 94118263
+                          payloadProtocolVersion: "3.1"
+                          payloadType: "scmudc"
+                          protocolVersion: "1.0"
+                          time: "2026-01-09T08:02:32.874426+00:00"
+                          uniqueId: "587A628A4042"
+                        payload:
+                          deviceInfo:
+                            boseID: "6921042"
+                            deviceID: "587A628A4042"
+                            deviceType: "SoundTouch 20"
+                            serialNumber: "P123456789101123456789"
+                            softwareVersion: "27.0.6.46330.5043500 epdbuild.trunk.hepdswbld04.2022-08-04T11:20:29"
+                            systemSerialNumber: "069236P81556160AE"
+                          events:
+                            - data:
+                                source-state: "SPOTIFY"
+                              monoTime: 94118263
+                              time: "2026-01-09T08:02:32.873379+00:00"
+                              type: "source-state-changed"
+                        receivedAt: "2026-01-09T08:02:32.874426+00:00"
+                emptyList:
+                  summary: Response with no events
+                  value:
+                    events: []
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                serverError:
+                  summary: Server error
+                  value:
+                    error: "Internal server error"
+                    message: "Failed to retrieve device events"
+
 components:
   schemas:
     Error:
@@ -429,8 +497,151 @@ components:
           items:
             $ref: '#/components/schemas/Speaker'
 
+    GetDeviceEvents200Response:
+      type: object
+      required:
+        - events
+      properties:
+        events:
+          type: array
+          description: List of device events
+          items:
+            $ref: '#/components/schemas/StoredDeviceEvent'
+
+    StoredDeviceEvent:
+      type: object
+      required:
+        - envelope
+        - payload
+        - receivedAt
+      properties:
+        envelope:
+          $ref: '#/components/schemas/EventEnvelope'
+        payload:
+          $ref: '#/components/schemas/EventPayload'
+        receivedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the event was received by the server
+          example: "2026-01-09T08:02:32.874426+00:00"
+
+    EventEnvelope:
+      type: object
+      required:
+        - monoTime
+        - payloadProtocolVersion
+        - payloadType
+        - protocolVersion
+        - time
+        - uniqueId
+      properties:
+        monoTime:
+          type: integer
+          description: Monotonic time value
+          example: 94118263
+        payloadProtocolVersion:
+          type: string
+          description: Payload protocol version
+          example: "3.1"
+        payloadType:
+          type: string
+          description: Type of payload
+          example: "scmudc"
+        protocolVersion:
+          type: string
+          description: Protocol version
+          example: "1.0"
+        time:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp
+          example: "2026-01-09T08:02:32.874426+00:00"
+        uniqueId:
+          type: string
+          description: Unique device identifier
+          example: "587A628A4042"
+
+    EventPayload:
+      type: object
+      required:
+        - deviceInfo
+        - events
+      properties:
+        deviceInfo:
+          $ref: '#/components/schemas/EventDeviceInfo'
+        events:
+          type: array
+          description: Array of events
+          items:
+            $ref: '#/components/schemas/DeviceEvent'
+
+    EventDeviceInfo:
+      type: object
+      required:
+        - boseID
+        - deviceID
+        - deviceType
+        - serialNumber
+        - softwareVersion
+        - systemSerialNumber
+      properties:
+        boseID:
+          type: string
+          description: Bose account ID
+          example: "6921042"
+        deviceID:
+          type: string
+          description: Device identifier
+          example: "587A628A4042"
+        deviceType:
+          type: string
+          description: Type of device
+          example: "SoundTouch 20"
+        serialNumber:
+          type: string
+          description: Device serial number
+          example: "P123456789101123456789"
+        softwareVersion:
+          type: string
+          description: Software version string
+          example: "27.0.6.46330.5043500 epdbuild.trunk.hepdswbld04.2022-08-04T11:20:29"
+        systemSerialNumber:
+          type: string
+          description: System serial number
+          example: "069236P81556160AE"
+
+    DeviceEvent:
+      type: object
+      required:
+        - data
+        - monoTime
+        - time
+        - type
+      properties:
+        data:
+          type: object
+          description: Event-specific data (structure varies by type)
+          additionalProperties: true
+          example:
+            source-state: "SPOTIFY"
+        monoTime:
+          type: integer
+          description: Monotonic time value
+          example: 94118263
+        time:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp
+          example: "2026-01-09T08:02:32.873379+00:00"
+        type:
+          type: string
+          description: Event type identifier
+          example: "source-state-changed"
+
 tags:
   - name: Spotify Management
     description: Endpoints for managing Spotify account authentication and integration
   - name: Account Management
     description: Endpoints for managing account data and devices
+  - name: Event Management
+    description: Endpoints for managing device events
