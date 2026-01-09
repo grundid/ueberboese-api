@@ -166,10 +166,8 @@ class EventControllerTest extends TestBase {
             .response();
 
     assertThat(response.jsonPath().getList("events")).hasSize(2);
-    assertThat(response.jsonPath().getString("events[0].payload.events[0].type"))
-        .isEqualTo("source-state-changed");
-    assertThat(response.jsonPath().getString("events[1].payload.events[0].type"))
-        .isEqualTo("play-state-changed");
+    assertThat(response.jsonPath().getString("events[0].type")).isEqualTo("source-state-changed");
+    assertThat(response.jsonPath().getString("events[1].type")).isEqualTo("play-state-changed");
   }
 
   @Test
@@ -264,9 +262,11 @@ class EventControllerTest extends TestBase {
             .extract()
             .response();
 
-    // Should have 1 event submission with 3 events inside
-    assertThat(response.jsonPath().getList("events")).hasSize(1);
-    assertThat(response.jsonPath().getList("events[0].payload.events")).hasSize(3);
+    // Should return all 3 events as pure events (without envelope/deviceInfo wrapper)
+    assertThat(response.jsonPath().getList("events")).hasSize(3);
+    assertThat(response.jsonPath().getString("events[0].type")).isEqualTo("source-state-changed");
+    assertThat(response.jsonPath().getString("events[1].type")).isEqualTo("art-changed");
+    assertThat(response.jsonPath().getString("events[2].type")).isEqualTo("play-state-changed");
   }
 
   @Test
