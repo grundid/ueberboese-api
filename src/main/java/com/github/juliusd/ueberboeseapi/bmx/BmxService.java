@@ -104,13 +104,7 @@ public class BmxService {
   }
 
   private @NonNull BmxServiceAssetsApiDto extractTuneInAssets() {
-    BmxServiceIconsApiDto icons =
-        new BmxServiceIconsApiDto(
-            "https://donpvpd81xeci.cloudfront.net/icons/large.svg",
-            getMonochromePngUrl(),
-            "https://donpvpd81xeci.cloudfront.net/icons/monochrome.svg",
-            "https://donpvpd81xeci.cloudfront.net/icons/small.svg");
-    icons.setDefaultAlbumArt("https://donpvpd81xeci.cloudfront.net/defaultAlbumArt.png");
+    var icons = createRadioIconsApiDto();
 
     return new BmxServiceAssetsApiDto(
         "#000000",
@@ -119,17 +113,22 @@ public class BmxService {
         "TuneIn");
   }
 
+  private @NonNull BmxServiceIconsApiDto createRadioIconsApiDto() {
+    var icons =
+        new BmxServiceIconsApiDto(
+            getMonochromeSvgUrl(),
+            getMonochromePngUrl(),
+            getMonochromeSvgUrl(),
+            getMonochromeSvgUrl());
+    icons.setDefaultAlbumArt(getMonochromePngUrl());
+    return icons;
+  }
+
   /** Creates the Local Internet Radio (Custom Stations) service definition. */
   private BmxServiceApiDto createLocalInternetRadioService() {
     BmxServiceIdApiDto id = new BmxServiceIdApiDto("LOCAL_INTERNET_RADIO", 11);
 
-    BmxServiceIconsApiDto icons =
-        new BmxServiceIconsApiDto(
-            "https://d11hhn06c3zsgm.cloudfront.net/icons/large.svg",
-            getMonochromePngUrl(),
-            "https://d11hhn06c3zsgm.cloudfront.net/icons/monochrome.svg",
-            "https://d11hhn06c3zsgm.cloudfront.net/icons/small.svg");
-    icons.setDefaultAlbumArt("https://d11hhn06c3zsgm.cloudfront.net/defaultAlbumArt.png");
+    var icons = createRadioIconsApiDto();
 
     BmxServiceAssetsApiDto assets =
         new BmxServiceAssetsApiDto(
@@ -189,12 +188,7 @@ public class BmxService {
   }
 
   private @NonNull BmxServiceAssetsApiDto createSiriusAssets() {
-    BmxServiceIconsApiDto icons =
-        new BmxServiceIconsApiDto(
-            "https://d3h9hdqyx8kz3e.cloudfront.net/icons/large.svg",
-            getMonochromePngUrl(),
-            "https://d3h9hdqyx8kz3e.cloudfront.net/icons/monochrome.svg",
-            "https://d3h9hdqyx8kz3e.cloudfront.net/icons/small.svg");
+    var icons = createRadioIconsApiDto();
 
     BmxServiceAssetsApiDto assets =
         new BmxServiceAssetsApiDto(
@@ -245,12 +239,7 @@ public class BmxService {
   }
 
   private @NonNull BmxServiceAssetsApiDto createRadioplayerAssets() {
-    BmxServiceIconsApiDto icons =
-        new BmxServiceIconsApiDto(
-            "https://donpvpd81xeci.cloudfront.net/icons/small.svg",
-            getMonochromePngUrl(),
-            "https://donpvpd81xeci.cloudfront.net/icons/monochrome.svg",
-            "https://donpvpd81xeci.cloudfront.net/icons/small.svg");
+    var icons = createRadioIconsApiDto();
 
     return new BmxServiceAssetsApiDto(
         "#cc0033",
@@ -261,6 +250,10 @@ public class BmxService {
 
   private @NonNull String getMonochromePngUrl() {
     return urlProperties.baseUrl() + "/icons/radio-logo-monochrome-small.png";
+  }
+
+  private @NonNull String getMonochromeSvgUrl() {
+    return urlProperties.baseUrl() + "/icons/radio-logo-monochrome.svg";
   }
 
   /**
