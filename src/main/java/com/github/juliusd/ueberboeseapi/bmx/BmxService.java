@@ -107,7 +107,7 @@ public class BmxService {
     BmxServiceIconsApiDto icons =
         new BmxServiceIconsApiDto(
             "https://donpvpd81xeci.cloudfront.net/icons/large.svg",
-            urlProperties.baseUrl() + "/icons/radio-logo-monochrome-small.png",
+            getMonochromePngUrl(),
             "https://donpvpd81xeci.cloudfront.net/icons/monochrome.svg",
             "https://donpvpd81xeci.cloudfront.net/icons/small.svg");
     icons.setDefaultAlbumArt("https://donpvpd81xeci.cloudfront.net/defaultAlbumArt.png");
@@ -126,7 +126,7 @@ public class BmxService {
     BmxServiceIconsApiDto icons =
         new BmxServiceIconsApiDto(
             "https://d11hhn06c3zsgm.cloudfront.net/icons/large.svg",
-            urlProperties.baseUrl() + "/icons/radio-logo-monochrome-small.png",
+            getMonochromePngUrl(),
             "https://d11hhn06c3zsgm.cloudfront.net/icons/monochrome.svg",
             "https://d11hhn06c3zsgm.cloudfront.net/icons/small.svg");
     icons.setDefaultAlbumArt("https://d11hhn06c3zsgm.cloudfront.net/defaultAlbumArt.png");
@@ -192,7 +192,7 @@ public class BmxService {
     BmxServiceIconsApiDto icons =
         new BmxServiceIconsApiDto(
             "https://d3h9hdqyx8kz3e.cloudfront.net/icons/large.svg",
-            urlProperties.baseUrl() + "/icons/radio-logo-monochrome-small.png",
+            getMonochromePngUrl(),
             "https://d3h9hdqyx8kz3e.cloudfront.net/icons/monochrome.svg",
             "https://d3h9hdqyx8kz3e.cloudfront.net/icons/small.svg");
 
@@ -248,7 +248,7 @@ public class BmxService {
     BmxServiceIconsApiDto icons =
         new BmxServiceIconsApiDto(
             "https://donpvpd81xeci.cloudfront.net/icons/small.svg",
-            urlProperties.baseUrl() + "/icons/radio-logo-monochrome-small.png",
+            getMonochromePngUrl(),
             "https://donpvpd81xeci.cloudfront.net/icons/monochrome.svg",
             "https://donpvpd81xeci.cloudfront.net/icons/small.svg");
 
@@ -257,6 +257,10 @@ public class BmxService {
         "Radio for you, from your country. Radioplayer is a unique broadcaster owned service, with higher quality streams, full content (including all live sport), and thousands of catch-up programs and podcasts. Radioplayer is available in UK, Germany, Canada, Austria, Belgium, Denmark, Ireland, Italy, Norway, Spain and Switzerland.",
         icons,
         "Radioplayer");
+  }
+
+  private @NonNull String getMonochromePngUrl() {
+    return urlProperties.baseUrl() + "/icons/radio-logo-monochrome-small.png";
   }
 
   /**
