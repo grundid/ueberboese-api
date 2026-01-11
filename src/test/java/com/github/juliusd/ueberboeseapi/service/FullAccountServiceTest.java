@@ -19,6 +19,7 @@ import com.github.juliusd.ueberboeseapi.generated.dtos.RecentItemApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.RecentsContainerApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.SourceApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.SourcesContainerApiDto;
+import com.github.juliusd.ueberboeseapi.recent.RecentService;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccount;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccountService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,8 +38,8 @@ class FullAccountServiceTest {
   private FullAccountService fullAccountService;
   private AccountDataService accountDataService;
   private ProxyService proxyService;
-  private XmlMapper xmlMapper;
   private SpotifyAccountService spotifyAccountService;
+  private RecentService recentService;
   private HttpServletRequest request;
 
   @BeforeEach
@@ -46,12 +47,18 @@ class FullAccountServiceTest {
     accountDataService = mock(AccountDataService.class);
     proxyService = mock(ProxyService.class);
     spotifyAccountService = mock(SpotifyAccountService.class);
+    recentService = mock(RecentService.class);
     XmlMessageConverterConfig config = new XmlMessageConverterConfig();
-    xmlMapper = config.customXmlMapper();
+    XmlMapper xmlMapper = config.customXmlMapper();
     request = mock(HttpServletRequest.class);
 
+    // Mock recentService to return empty list by default
+    when(recentService.getRecents(anyString())).thenReturn(List.of());
+    when(recentService.convertToApiDtos(any())).thenReturn(List.of());
+
     fullAccountService =
-        new FullAccountService(accountDataService, proxyService, xmlMapper, spotifyAccountService);
+        new FullAccountService(
+            accountDataService, proxyService, xmlMapper, spotifyAccountService, recentService);
   }
 
   @Test
@@ -567,7 +574,7 @@ class FullAccountServiceTest {
     PresetApiDto preset = new PresetApiDto();
     preset.setButtonNumber(1);
     preset.setName("Test Preset");
-    preset.setContainerArt("http://example.com/art.png");
+    preset.setContainerArt("https://example.org/art.png");
     preset.setContentItemType("tracklisturl");
     preset.setLocation("/playback/container/123");
     preset.setCreatedOn(OffsetDateTime.now());
@@ -668,6 +675,10 @@ class FullAccountServiceTest {
     when(accountDataService.hasAccountData(accountId)).thenReturn(true);
     when(accountDataService.loadFullAccountData(accountId)).thenReturn(response);
 
+    // Mock recentService to return the recent we created
+    when(recentService.getRecents(accountId)).thenReturn(List.of());
+    when(recentService.convertToApiDtos(any())).thenReturn(recentList);
+
     // When
     Optional<FullAccountResponseApiDto> result =
         fullAccountService.getFullAccount(accountId, request);
@@ -713,7 +724,7 @@ class FullAccountServiceTest {
     PresetApiDto preset = new PresetApiDto();
     preset.setButtonNumber(1);
     preset.setName("Preset");
-    preset.setContainerArt("http://example.com/art.png");
+    preset.setContainerArt("https://example.org/art.png");
     preset.setContentItemType("tracklisturl");
     preset.setLocation("/playback/container/123");
     preset.setCreatedOn(OffsetDateTime.now());
@@ -758,6 +769,10 @@ class FullAccountServiceTest {
 
     when(accountDataService.hasAccountData(accountId)).thenReturn(true);
     when(accountDataService.loadFullAccountData(accountId)).thenReturn(response);
+
+    // Mock recentService to return the recent we created
+    when(recentService.getRecents(accountId)).thenReturn(List.of());
+    when(recentService.convertToApiDtos(any())).thenReturn(recentList);
 
     // When
     Optional<FullAccountResponseApiDto> result =

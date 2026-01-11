@@ -1,8 +1,12 @@
 package com.github.juliusd.ueberboeseapi;
 
 import com.github.juliusd.ueberboeseapi.device.DeviceRepository;
+import com.github.juliusd.ueberboeseapi.recent.Recent;
+import com.github.juliusd.ueberboeseapi.recent.RecentRepository;
+import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccount;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccountRepository;
 import io.restassured.RestAssured;
+import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,8 +42,9 @@ import org.springframework.test.context.TestPropertySource;
 public class TestBase {
 
   @LocalServerPort private int port;
-  @Autowired private SpotifyAccountRepository spotifyAccountRepository;
+  @Autowired protected SpotifyAccountRepository spotifyAccountRepository;
   @Autowired protected DeviceRepository deviceRepository;
+  @Autowired protected RecentRepository recentRepository;
 
   @BeforeEach
   void setUp() {
@@ -47,5 +52,62 @@ public class TestBase {
     RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     spotifyAccountRepository.deleteAll();
     deviceRepository.deleteAll();
+    recentRepository.deleteAll();
+
+    setupTestData();
+  }
+
+  protected void setupTestData() {
+    // Add test recents data (ordered by lastPlayedAt DESC - most recent first)
+    // Using source IDs that exist in the static XML sources section
+    recentRepository.save(
+        Recent.builder()
+            .id(null)
+            .accountId("6921042")
+            .name("Ghostsitter 23 - Das Haus im Moor")
+            .location("/playback/container/c3BvdGlmeTphbGJ1bTowZ3BGWVZNbVV6VkVxeVAyeUh3cEha")
+            .sourceId("19989643") // Spotify source that exists in sources section
+            .contentItemType("tracklisturl")
+            .deviceId("587A628A4042")
+            .lastPlayedAt(OffsetDateTime.parse("2025-12-13T17:14:28.000+00:00"))
+            .createdOn(OffsetDateTime.parse("2025-12-13T17:14:28.000+00:00"))
+            .updatedOn(OffsetDateTime.now())
+            .version(null)
+            .build());
+
+    recentRepository.save(
+        Recent.builder()
+            .id(null)
+            .accountId("6921042")
+            .name("Radio TEDDY")
+            .location("/v1/playback/station/s80044")
+            .sourceId("19989342") // TuneIn source that exists in sources section
+            .contentItemType("stationurl")
+            .deviceId("587A628A4042")
+            .lastPlayedAt(OffsetDateTime.parse("2018-11-27T18:20:01.000+00:00"))
+            .createdOn(OffsetDateTime.parse("2018-11-27T18:20:01.000+00:00"))
+            .updatedOn(OffsetDateTime.now())
+            .version(null)
+            .build());
+  }
+
+  protected void addSpotifyTestAccount() {
+    // Add test Spotify accounts for patching tests
+    spotifyAccountRepository.save(
+        new SpotifyAccount(
+            "mockuser123",
+            "Mock User 1",
+            "mockTokenUser1",
+            OffsetDateTime.parse("2019-07-20T17:48:31.000+00:00"),
+            OffsetDateTime.now(),
+            null));
+    spotifyAccountRepository.save(
+        new SpotifyAccount(
+            "user1namespot",
+            "Mock User 2",
+            "mockTokenUser2",
+            OffsetDateTime.parse("2019-07-20T17:48:31.000+00:00"),
+            OffsetDateTime.now(),
+            null));
   }
 }

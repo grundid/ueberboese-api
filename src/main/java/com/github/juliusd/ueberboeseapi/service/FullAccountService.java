@@ -3,11 +3,16 @@ package com.github.juliusd.ueberboeseapi.service;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.github.juliusd.ueberboeseapi.ProxyService;
 import com.github.juliusd.ueberboeseapi.generated.dtos.FullAccountResponseApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.RecentItemApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.RecentsContainerApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.SourceApiDto;
+import com.github.juliusd.ueberboeseapi.recent.Recent;
+import com.github.juliusd.ueberboeseapi.recent.RecentService;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccount;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccountService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,6 +35,7 @@ public class FullAccountService {
   private final ProxyService proxyService;
   private final XmlMapper xmlMapper;
   private final SpotifyAccountService spotifyAccountService;
+  private final RecentService recentService;
 
   /**
    * Retrieves full account data for the given account ID. First checks the cache, and if not found,
@@ -48,6 +54,7 @@ public class FullAccountService {
       try {
         FullAccountResponseApiDto response = accountDataService.loadFullAccountData(accountId);
         log.info("Successfully loaded account data from cache for accountId: {}", accountId);
+        injectRecentsFromDatabase(response, accountId);
         patch(response);
         return Optional.of(response);
       } catch (IOException e) {
@@ -89,6 +96,11 @@ public class FullAccountService {
             saveException.getMessage());
       }
 
+      // Inject database recents before patching
+      injectRecentsFromDatabase(parsedResponse, accountId);
+      // Apply Spotify patches
+      patch(parsedResponse);
+
       return Optional.of(parsedResponse);
     } catch (Exception parseException) {
       log.error(
@@ -97,6 +109,44 @@ public class FullAccountService {
           parseException.getMessage());
       return Optional.empty();
     }
+  }
+
+  private void injectRecentsFromDatabase(FullAccountResponseApiDto response, String accountId) {
+    if (response.getDevices() == null || response.getDevices().getDevice() == null) {
+      return;
+    }
+
+    // Fetch recents from database (shared across all devices)
+    List<Recent> recents = recentService.getRecents(accountId);
+    List<RecentItemApiDto> recentDtos = recentService.convertToApiDtos(recents);
+
+    // Build a map of source ID -> source from the account's sources
+    Map<String, SourceApiDto> sourcesById = new HashMap<>();
+    if (response.getSources() != null && response.getSources().getSource() != null) {
+      for (SourceApiDto source : response.getSources().getSource()) {
+        if (source.getId() != null) {
+          sourcesById.put(source.getId(), source);
+        }
+      }
+    }
+
+    // Replace mock sources in recents with actual sources from the account
+    for (RecentItemApiDto recent : recentDtos) {
+      if (recent.getSourceid() != null && sourcesById.containsKey(recent.getSourceid())) {
+        // Replace the mock source with the actual source from the account
+        recent.setSource(sourcesById.get(recent.getSourceid()));
+      }
+    }
+
+    // Replace recents in ALL devices with the same list
+    RecentsContainerApiDto recentsContainer = new RecentsContainerApiDto();
+    recentDtos.forEach(recentsContainer::addRecentItem);
+
+    for (var device : response.getDevices().getDevice()) {
+      device.setRecents(recentsContainer);
+    }
+
+    log.info("Injected {} recents into full account for accountId: {}", recents.size(), accountId);
   }
 
   private void patch(FullAccountResponseApiDto response) {

@@ -5,6 +5,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.xmlunit.matchers.CompareMatcher.isSimilarTo;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.xmlunit.placeholder.PlaceholderDifferenceEvaluator;
 
@@ -228,7 +229,7 @@ class UeberboeseControllerTest extends TestBase {
         <?xml version="1.0" encoding="UTF-8" ?>
         <recent>
           <lastplayedat>2025-11-01T17:32:59+00:00</lastplayedat>
-          <sourceid>19989313</sourceid>
+          <sourceid>19989342</sourceid>
           <name>Radio TEDDY</name>
           <location>/v1/playback/station/s80044</location>
           <contentItemType>stationurl</contentItemType>
@@ -272,21 +273,21 @@ class UeberboeseControllerTest extends TestBase {
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <recent id="${xmlunit.isNumber}">
           <contentItemType>stationurl</contentItemType>
-          <createdOn>2018-11-27T18:20:01.000+00:00</createdOn>
+          <createdOn>${xmlunit.isDateTime}</createdOn>
           <lastplayedat>2025-11-01T17:32:59.000+00:00</lastplayedat>
           <location>/v1/playback/station/s80044</location>
           <name>Radio TEDDY</name>
-          <source id="19989313" type="Audio">
-            <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
-            <credential type="token">eyDu=</credential>
+          <source id="19989342" type="Audio">
+            <createdOn>${xmlunit.isDateTime}</createdOn>
+            <credential type="token">eyJduTune=</credential>
             <name/>
             <sourceproviderid>25</sourceproviderid>
             <sourcename/>
             <sourceSettings/>
-            <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
+            <updatedOn>${xmlunit.isDateTime}</updatedOn>
             <username/>
           </source>
-          <sourceid>19989313</sourceid>
+          <sourceid>19989342</sourceid>
           <updatedOn>${xmlunit.isDateTime}</updatedOn>
         </recent>""";
 
@@ -349,12 +350,12 @@ class UeberboeseControllerTest extends TestBase {
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <recent id="${xmlunit.isNumber}">
           <contentItemType>testurl</contentItemType>
-          <createdOn>2018-11-27T18:20:01.000+00:00</createdOn>
+          <createdOn>${xmlunit.isDateTime}</createdOn>
           <lastplayedat>2025-11-09T18:00:00.000+00:00</lastplayedat>
           <location>/v1/playback/test/station</location>
           <name>Test Station</name>
           <source id="12345678" type="Audio">
-            <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+            <createdOn>2018-08-11T08:55:28.000+00:00</createdOn>
             <credential type="token">eyDu=</credential>
             <name/>
             <sourceproviderid>25</sourceproviderid>
@@ -394,14 +395,26 @@ class UeberboeseControllerTest extends TestBase {
   @Test
   void addRecentItem_shouldReturnUniqueIds() {
     // language=XML
-    String requestXml =
+    String firstRequestXml =
         """
         <?xml version="1.0" encoding="UTF-8" ?>
         <recent>
           <lastplayedat>2025-11-01T17:32:59+00:00</lastplayedat>
-          <sourceid>19989313</sourceid>
+          <sourceid>19989342</sourceid>
           <name>Radio TEDDY</name>
           <location>/v1/playback/station/s80044</location>
+          <contentItemType>stationurl</contentItemType>
+        </recent>""";
+
+    // language=XML
+    String secondRequestXml =
+        """
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <recent>
+          <lastplayedat>2025-11-01T17:32:59+00:00</lastplayedat>
+          <sourceid>19989314</sourceid>
+          <name>Radio TEDDY2</name>
+          <location>/v1/playback/station/s80045</location>
           <contentItemType>stationurl</contentItemType>
         </recent>""";
 
@@ -412,7 +425,7 @@ class UeberboeseControllerTest extends TestBase {
             .header("User-agent", "Bose_Lisa/27.0.6")
             .header("Authorization", "Bearer test-token")
             .header("Content-type", "application/vnd.bose.streaming-v1.2+xml")
-            .body(requestXml)
+            .body(firstRequestXml)
             .when()
             .post("/streaming/account/6921042/device/587A628A4042/recent")
             .then()
@@ -420,14 +433,14 @@ class UeberboeseControllerTest extends TestBase {
             .extract()
             .header("Location");
 
-    // Make second request
+    // Make second request with different location+sourceId
     String secondLocation =
         given()
             .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
             .header("User-agent", "Bose_Lisa/27.0.6")
             .header("Authorization", "Bearer test-token")
             .header("Content-type", "application/vnd.bose.streaming-v1.2+xml")
-            .body(requestXml)
+            .body(secondRequestXml)
             .when()
             .post("/streaming/account/6921042/device/587A628A4042/recent")
             .then()
@@ -435,9 +448,9 @@ class UeberboeseControllerTest extends TestBase {
             .extract()
             .header("Location");
 
-    // Verify the IDs are different
-    assert !firstLocation.equals(secondLocation)
-        : "Location headers should contain different IDs for separate requests";
+    Assertions.assertThat(firstLocation)
+        .isNotEqualTo(secondLocation)
+        .describedAs("Location headers should contain different IDs for separate requests");
   }
 
   @Test
@@ -453,17 +466,17 @@ class UeberboeseControllerTest extends TestBase {
             <lastplayedat>${xmlunit.isDateTime}</lastplayedat>
             <location>/playback/container/c3BvdGlmeTphbGJ1bTowZ3BGWVZNbVV6VkVxeVAyeUh3cEha</location>
             <name>Ghostsitter 23 - Das Haus im Moor</name>
-            <source id="19989621" type="Audio">
-              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
-              <credential type="token_version_3">mockToken123=</credential>
-              <name>mockuser123</name>
+            <source id="19989643" type="Audio">
+              <createdOn>2018-08-11T08:55:28.000+00:00</createdOn>
+              <credential type="token_version_3">mockTokenUser2</credential>
+              <name>user1namespot</name>
               <sourceproviderid>15</sourceproviderid>
-              <sourcename>mock@example.com</sourcename>
+              <sourcename>user1@example.org</sourcename>
               <sourceSettings/>
               <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
-              <username>mockuser123</username>
+              <username>user1namespot</username>
             </source>
-            <sourceid>19989621</sourceid>
+            <sourceid>19989643</sourceid>
             <updatedOn>${xmlunit.isDateTime}</updatedOn>
           </recent>
           <recent id="${xmlunit.isNumber}">
@@ -472,9 +485,9 @@ class UeberboeseControllerTest extends TestBase {
             <lastplayedat>${xmlunit.isDateTime}</lastplayedat>
             <location>/v1/playback/station/s80044</location>
             <name>Radio TEDDY</name>
-            <source id="19989313" type="Audio">
-              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
-              <credential type="token">eyJmock=</credential>
+            <source id="19989342" type="Audio">
+              <createdOn>2018-08-11T08:55:28.000+00:00</createdOn>
+              <credential type="token">eyJduTune=</credential>
               <name/>
               <sourceproviderid>25</sourceproviderid>
               <sourcename/>
@@ -482,7 +495,7 @@ class UeberboeseControllerTest extends TestBase {
               <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
               <username/>
             </source>
-            <sourceid>19989313</sourceid>
+            <sourceid>19989342</sourceid>
             <updatedOn>${xmlunit.isDateTime}</updatedOn>
           </recent>
         </recents>""";
@@ -522,7 +535,7 @@ class UeberboeseControllerTest extends TestBase {
             <location>/v1/playback/station/s80044</location>
             <name>Radio Foobar</name>
             <source id="19989342" type="Audio">
-              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+              <createdOn>${xmlunit.isDateTime}</createdOn>
               <credential type="token">eyJduTune=</credential>
               <name/>
               <sourceproviderid>25</sourceproviderid>
@@ -541,7 +554,7 @@ class UeberboeseControllerTest extends TestBase {
             <location>/playback/container/131311232312121212</location>
             <name>Radio Foobar</name>
             <source id="19989643" type="Audio">
-              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+              <createdOn>${xmlunit.isDateTime}</createdOn>
               <credential type="token_version_3">token-User1-Spot</credential>
               <name>user1namespot</name>
               <sourceproviderid>15</sourceproviderid>
@@ -560,7 +573,7 @@ class UeberboeseControllerTest extends TestBase {
             <location>/v1/playback/station/s25111</location>
             <name>radioonetwo</name>
             <source id="19989342" type="Audio">
-              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+              <createdOn>${xmlunit.isDateTime}</createdOn>
               <credential type="token">eyJduTune=</credential>
               <name/>
               <sourceproviderid>25</sourceproviderid>
@@ -579,7 +592,7 @@ class UeberboeseControllerTest extends TestBase {
             <location>/playback/container/45345349538</location>
             <name>Kids</name>
             <source id="19989643" type="Audio">
-              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+              <createdOn>${xmlunit.isDateTime}</createdOn>
               <credential type="token_version_3">token-User1-Spot</credential>
               <name>user1namespot</name>
               <sourceproviderid>15</sourceproviderid>
@@ -598,7 +611,7 @@ class UeberboeseControllerTest extends TestBase {
             <location>/playback/container/urlssfdfsd</location>
             <name>Artist Radio</name>
             <source id="20260226" type="Audio">
-              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+              <createdOn>${xmlunit.isDateTime}</createdOn>
               <credential type="token_version_3">token-User2-Spot</credential>
               <name>user2namespot</name>
               <sourceproviderid>15</sourceproviderid>
@@ -617,7 +630,7 @@ class UeberboeseControllerTest extends TestBase {
             <location>/playback/container/577667532256ht</location>
             <name>Komplett Entspannt</name>
             <source id="19989643" type="Audio">
-              <createdOn>2018-08-11T08:55:41.000+00:00</createdOn>
+              <createdOn>${xmlunit.isDateTime}</createdOn>
               <credential type="token_version_3">token-User1-Spot</credential>
               <name>user1namespot</name>
               <sourceproviderid>15</sourceproviderid>
