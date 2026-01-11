@@ -125,7 +125,7 @@ After executing the configuration commands, unplug each speaker to restart the s
 
 #### 4. Verify Configuration
 
-The device should acknowledge the configuration change. You can verify by checking the logs 
+The device should acknowledge the configuration change. You can verify by checking the logs
 - you should see requests coming from your SoundTouch device.
 
 ## Step 4: Install Überböse Android App (Optional)
