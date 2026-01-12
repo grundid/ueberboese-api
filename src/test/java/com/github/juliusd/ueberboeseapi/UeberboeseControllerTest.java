@@ -455,50 +455,7 @@ class UeberboeseControllerTest extends TestBase {
 
   @Test
   void getRecents_shouldReturnRecentsList() {
-    // language=XML
-    String expectedXml =
-        """
-        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        <recents>
-          <recent id="${xmlunit.isNumber}">
-            <contentItemType>tracklisturl</contentItemType>
-            <createdOn>2025-12-13T17:14:28.000+00:00</createdOn>
-            <lastplayedat>${xmlunit.isDateTime}</lastplayedat>
-            <location>/playback/container/c3BvdGlmeTphbGJ1bTowZ3BGWVZNbVV6VkVxeVAyeUh3cEha</location>
-            <name>Ghostsitter 23 - Das Haus im Moor</name>
-            <source id="19989643" type="Audio">
-              <createdOn>2018-08-11T08:55:28.000+00:00</createdOn>
-              <credential type="token_version_3">mockTokenUser2</credential>
-              <name>user1namespot</name>
-              <sourceproviderid>15</sourceproviderid>
-              <sourcename>user1@example.org</sourcename>
-              <sourceSettings/>
-              <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
-              <username>user1namespot</username>
-            </source>
-            <sourceid>19989643</sourceid>
-            <updatedOn>${xmlunit.isDateTime}</updatedOn>
-          </recent>
-          <recent id="${xmlunit.isNumber}">
-            <contentItemType>stationurl</contentItemType>
-            <createdOn>2018-11-27T18:20:01.000+00:00</createdOn>
-            <lastplayedat>${xmlunit.isDateTime}</lastplayedat>
-            <location>/v1/playback/station/s80044</location>
-            <name>Radio TEDDY</name>
-            <source id="19989342" type="Audio">
-              <createdOn>2018-08-11T08:55:28.000+00:00</createdOn>
-              <credential type="token">eyJduTune=</credential>
-              <name/>
-              <sourceproviderid>25</sourceproviderid>
-              <sourcename/>
-              <sourceSettings/>
-              <updatedOn>2019-07-20T17:48:31.000+00:00</updatedOn>
-              <username/>
-            </source>
-            <sourceid>19989342</sourceid>
-            <updatedOn>${xmlunit.isDateTime}</updatedOn>
-          </recent>
-        </recents>""";
+    givenRecentsInDB();
 
     String actualXml =
         given()
@@ -513,6 +470,51 @@ class UeberboeseControllerTest extends TestBase {
             .extract()
             .body()
             .asString();
+
+    // language=XML
+    String expectedXml =
+        """
+       <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+       <recents>
+         <recent id="${xmlunit.isNumber}">
+           <contentItemType>tracklisturl</contentItemType>
+           <createdOn>2025-12-13T17:14:28.000+00:00</createdOn>
+           <lastplayedat>${xmlunit.isDateTime}</lastplayedat>
+           <location>/playback/container/c3BvdGlmeTphbGJ1bTowZ3BGWVZNbVV6VkVxeVAyeUh3cEha</location>
+           <name>Ghostsitter 42 - Das Haus im Moor</name>
+           <source id="19989643" type="Audio">
+             <createdOn>2018-08-11T08:55:28.000+00:00</createdOn>
+             <credential type="token_version_3">token-User1-Spot</credential>
+             <name>user1namespot</name>
+             <sourceproviderid>15</sourceproviderid>
+             <sourcename>user1@example.org</sourcename>
+             <sourceSettings/>
+             <updatedOn>2018-08-11T08:55:28.000+00:00</updatedOn>
+             <username>user1namespot</username>
+           </source>
+           <sourceid>19989643</sourceid>
+           <updatedOn>${xmlunit.isDateTime}</updatedOn>
+         </recent>
+         <recent id="${xmlunit.isNumber}">
+           <contentItemType>stationurl</contentItemType>
+           <createdOn>2018-11-27T18:20:01.000+00:00</createdOn>
+           <lastplayedat>${xmlunit.isDateTime}</lastplayedat>
+           <location>/v1/playback/station/s80044</location>
+           <name>Radio TEDDY</name>
+           <source id="19989342" type="Audio">
+             <createdOn>2018-08-11T08:55:28.000+00:00</createdOn>
+             <credential type="token">eyJduTune=</credential>
+             <name/>
+             <sourceproviderid>25</sourceproviderid>
+             <sourcename/>
+             <sourceSettings/>
+             <updatedOn>2018-08-11T08:55:28.000+00:00</updatedOn>
+             <username/>
+           </source>
+           <sourceid>19989342</sourceid>
+           <updatedOn>${xmlunit.isDateTime}</updatedOn>
+         </recent>
+       </recents>""";
 
     assertThat(
         actualXml,

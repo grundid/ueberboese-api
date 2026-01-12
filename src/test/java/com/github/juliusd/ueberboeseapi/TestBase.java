@@ -53,18 +53,16 @@ public class TestBase {
     spotifyAccountRepository.deleteAll();
     deviceRepository.deleteAll();
     recentRepository.deleteAll();
-
-    setupTestData();
   }
 
-  protected void setupTestData() {
+  protected void givenRecentsInDB() {
     // Add test recents data (ordered by lastPlayedAt DESC - most recent first)
     // Using source IDs that exist in the static XML sources section
     recentRepository.save(
         Recent.builder()
             .id(null)
             .accountId("6921042")
-            .name("Ghostsitter 23 - Das Haus im Moor")
+            .name("Ghostsitter 42 - Das Haus im Moor")
             .location("/playback/container/c3BvdGlmeTphbGJ1bTowZ3BGWVZNbVV6VkVxeVAyeUh3cEha")
             .sourceId("19989643") // Spotify source that exists in sources section
             .contentItemType("tracklisturl")
@@ -91,7 +89,7 @@ public class TestBase {
             .build());
   }
 
-  protected void addSpotifyTestAccount() {
+  protected void givenSpotifyAccountsInDB() {
     // Add test Spotify accounts for patching tests
     spotifyAccountRepository.save(
         new SpotifyAccount(

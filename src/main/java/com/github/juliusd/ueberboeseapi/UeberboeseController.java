@@ -14,6 +14,7 @@ import com.github.juliusd.ueberboeseapi.generated.dtos.SourceApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.SourceProviderApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.SourceProvidersResponseApiDto;
 import com.github.juliusd.ueberboeseapi.recent.Recent;
+import com.github.juliusd.ueberboeseapi.recent.RecentMapper;
 import com.github.juliusd.ueberboeseapi.recent.RecentService;
 import com.github.juliusd.ueberboeseapi.service.AccountDataService;
 import com.github.juliusd.ueberboeseapi.service.DeviceTrackingService;
@@ -40,6 +41,7 @@ public class UeberboeseController implements DefaultApi {
   private final DeviceTrackingService deviceTrackingService;
   private final FullAccountService fullAccountService;
   private final RecentService recentService;
+  private final RecentMapper recentMapper;
 
   @Autowired private HttpServletRequest request;
 
@@ -172,7 +174,8 @@ public class UeberboeseController implements DefaultApi {
 
     // Note: deviceId parameter is ignored - recents are shared across account
     List<Recent> recents = recentService.getRecents(accountId);
-    List<RecentItemApiDto> recentDtos = recentService.convertToApiDtos(recents);
+    var sources = loadSources(accountId);
+    List<RecentItemApiDto> recentDtos = recentMapper.convertToApiDtos(recents, sources);
 
     RecentsContainerApiDto response = new RecentsContainerApiDto();
     recentDtos.forEach(response::addRecentItem);
@@ -186,6 +189,21 @@ public class UeberboeseController implements DefaultApi {
             "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization")
         .header("Access-Control-Expose-Headers", "Authorization")
         .body(response);
+  }
+
+  private List<SourceApiDto> loadSources(String accountId) {
+    try {
+
+      if (accountDataService.hasAccountData(accountId)) {
+        FullAccountResponseApiDto fullAccount = accountDataService.loadFullAccountData(accountId);
+        return fullAccount.getSources().getSource();
+      } else {
+        return List.of();
+      }
+    } catch (IOException e) {
+      log.warn("failed to load sources", e);
+      return List.of();
+    }
   }
 
   @Override

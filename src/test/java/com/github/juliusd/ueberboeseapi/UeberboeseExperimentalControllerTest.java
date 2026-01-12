@@ -28,7 +28,6 @@ class UeberboeseExperimentalControllerTest extends TestBase {
   void setUpWireMock() {
     wireMockServer = new WireMockServer(options().port(8089));
     wireMockServer.start();
-    addSpotifyTestAccount(); // Add Spotify account for patching tests
   }
 
   @AfterEach
@@ -186,7 +185,7 @@ class UeberboeseExperimentalControllerTest extends TestBase {
                  <createdOn>${xmlunit.isDateTime}</createdOn>
                  <lastplayedat>${xmlunit.isDateTime}</lastplayedat>
                  <location>/playback/container/c3BvdGlmeTphbGJ1bTowZ3BGWVZNbVV6VkVxeVAyeUh3cEha</location>
-                 <name>Ghostsitter 23 - Das Haus im Moor</name>
+                 <name>Ghostsitter 42 - Das Haus im Moor</name>
                  <source id="19989643" type="Audio">
                    <createdOn>${xmlunit.isDateTime}</createdOn>
                    <credential type="token_version_3">mockTokenUser2</credential>
@@ -362,7 +361,7 @@ class UeberboeseExperimentalControllerTest extends TestBase {
                  <createdOn>${xmlunit.isDateTime}</createdOn>
                  <lastplayedat>${xmlunit.isDateTime}</lastplayedat>
                  <location>/playback/container/c3BvdGlmeTphbGJ1bTowZ3BGWVZNbVV6VkVxeVAyeUh3cEha</location>
-                 <name>Ghostsitter 23 - Das Haus im Moor</name>
+                 <name>Ghostsitter 42 - Das Haus im Moor</name>
                  <source id="19989643" type="Audio">
                    <createdOn>${xmlunit.isDateTime}</createdOn>
                    <credential type="token_version_3">mockTokenUser2</credential>
@@ -480,6 +479,9 @@ class UeberboeseExperimentalControllerTest extends TestBase {
          </sources>
        </account>
        """;
+
+    givenRecentsInDB();
+    givenSpotifyAccountsInDB();
 
     var responseXml =
         given()

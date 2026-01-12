@@ -7,6 +7,7 @@ import com.github.juliusd.ueberboeseapi.generated.dtos.RecentItemApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.RecentsContainerApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.SourceApiDto;
 import com.github.juliusd.ueberboeseapi.recent.Recent;
+import com.github.juliusd.ueberboeseapi.recent.RecentMapper;
 import com.github.juliusd.ueberboeseapi.recent.RecentService;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccount;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccountService;
@@ -36,6 +37,7 @@ public class FullAccountService {
   private final XmlMapper xmlMapper;
   private final SpotifyAccountService spotifyAccountService;
   private final RecentService recentService;
+  private final RecentMapper recentMapper;
 
   /**
    * Retrieves full account data for the given account ID. First checks the cache, and if not found,
@@ -118,7 +120,8 @@ public class FullAccountService {
 
     // Fetch recents from database (shared across all devices)
     List<Recent> recents = recentService.getRecents(accountId);
-    List<RecentItemApiDto> recentDtos = recentService.convertToApiDtos(recents);
+    List<RecentItemApiDto> recentDtos =
+        recentMapper.convertToApiDtos(recents, response.getSources().getSource());
 
     // Build a map of source ID -> source from the account's sources
     Map<String, SourceApiDto> sourcesById = new HashMap<>();

@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.github.juliusd.ueberboeseapi.ProxyService;
 import com.github.juliusd.ueberboeseapi.XmlMessageConverterConfig;
 import com.github.juliusd.ueberboeseapi.generated.dtos.CredentialApiDto;
@@ -19,6 +18,8 @@ import com.github.juliusd.ueberboeseapi.generated.dtos.RecentItemApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.RecentsContainerApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.SourceApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.SourcesContainerApiDto;
+import com.github.juliusd.ueberboeseapi.recent.Recent;
+import com.github.juliusd.ueberboeseapi.recent.RecentMapper;
 import com.github.juliusd.ueberboeseapi.recent.RecentService;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccount;
 import com.github.juliusd.ueberboeseapi.spotify.SpotifyAccountService;
@@ -28,37 +29,42 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+@ExtendWith(MockitoExtension.class)
 class FullAccountServiceTest {
 
+  private static final String SPOTIFY_USER_ID = "spotify-user-123";
+  private static final String SPOTIFY_SOURCE_ID = "123";
+
+  @Mock private AccountDataService accountDataService;
+  @Mock private ProxyService proxyService;
+  @Mock private SpotifyAccountService spotifyAccountService;
+  @Mock private RecentService recentService;
+  @Mock private HttpServletRequest request;
+
   private FullAccountService fullAccountService;
-  private AccountDataService accountDataService;
-  private ProxyService proxyService;
-  private SpotifyAccountService spotifyAccountService;
-  private RecentService recentService;
-  private HttpServletRequest request;
 
   @BeforeEach
   void setUp() {
-    accountDataService = mock(AccountDataService.class);
-    proxyService = mock(ProxyService.class);
-    spotifyAccountService = mock(SpotifyAccountService.class);
-    recentService = mock(RecentService.class);
-    XmlMessageConverterConfig config = new XmlMessageConverterConfig();
-    XmlMapper xmlMapper = config.customXmlMapper();
-    request = mock(HttpServletRequest.class);
-
-    // Mock recentService to return empty list by default
-    when(recentService.getRecents(anyString())).thenReturn(List.of());
-    when(recentService.convertToApiDtos(any())).thenReturn(List.of());
+    var xmlMapper = new XmlMessageConverterConfig().customXmlMapper();
+    var recentMapper = new RecentMapper();
 
     fullAccountService =
         new FullAccountService(
-            accountDataService, proxyService, xmlMapper, spotifyAccountService, recentService);
+            accountDataService,
+            proxyService,
+            xmlMapper,
+            spotifyAccountService,
+            recentService,
+            recentMapper);
   }
 
   @Test
@@ -528,18 +534,18 @@ class FullAccountServiceTest {
     return response;
   }
 
-  private SourceApiDto createSource(
+  private static SourceApiDto createSource(
       String sourceproviderid, String username, String credentialValue) {
-    SourceApiDto source = new SourceApiDto();
-    source.setId("source-id");
-    source.setType("Audio");
-    source.setSourceproviderid(sourceproviderid);
-    source.setUsername(username);
-    source.setName("Test Source");
-    source.setSourcename("Test Source Name");
-    source.setSourceSettings(new Object());
-    source.setCreatedOn(OffsetDateTime.now());
-    source.setUpdatedOn(OffsetDateTime.now());
+    SourceApiDto source =
+        new SourceApiDto()
+            .id(SPOTIFY_SOURCE_ID)
+            .type("Audio")
+            .sourceproviderid(sourceproviderid)
+            .username(username)
+            .name("Test Source")
+            .sourcename("Test Source Name")
+            .createdOn(OffsetDateTime.parse("2018-11-03T10:15:30+01:00"))
+            .updatedOn(OffsetDateTime.parse("2022-12-03T10:15:30+01:00"));
 
     CredentialApiDto credential = new CredentialApiDto();
     credential.setType("token");
@@ -558,8 +564,8 @@ class FullAccountServiceTest {
     String newRefreshToken = "new-preset-token";
     OffsetDateTime updatedTimestamp = OffsetDateTime.now().minusDays(1);
 
-    FullAccountResponseApiDto response = new FullAccountResponseApiDto();
-    response.setId(accountId);
+    FullAccountResponseApiDto fullAccount = new FullAccountResponseApiDto();
+    fullAccount.setId(accountId);
 
     // Create device with preset containing Spotify source
     DevicesContainerApiDto devices = new DevicesContainerApiDto();
@@ -590,7 +596,8 @@ class FullAccountServiceTest {
 
     deviceList.add(device);
     devices.setDevice(deviceList);
-    response.setDevices(devices);
+    fullAccount.setDevices(devices);
+    fullAccount.setSources(new SourcesContainerApiDto());
 
     // Mock SpotifyAccountService
     SpotifyAccount spotifyAccount =
@@ -604,7 +611,7 @@ class FullAccountServiceTest {
     when(spotifyAccountService.listAllAccounts()).thenReturn(List.of(spotifyAccount));
 
     when(accountDataService.hasAccountData(accountId)).thenReturn(true);
-    when(accountDataService.loadFullAccountData(accountId)).thenReturn(response);
+    when(accountDataService.loadFullAccountData(accountId)).thenReturn(fullAccount);
 
     // When
     Optional<FullAccountResponseApiDto> result =
@@ -622,62 +629,31 @@ class FullAccountServiceTest {
   void testPatch_NestedRecentsSourcesPatched() throws IOException {
     // Given
     String accountId = "test-account-nested-recents";
-    String spotifyUserId = "spotify-user-recent";
-    String originalToken = "old-recent-token";
     String newRefreshToken = "new-recent-token";
-    OffsetDateTime updatedTimestamp = OffsetDateTime.now().minusDays(2);
-
-    FullAccountResponseApiDto response = new FullAccountResponseApiDto();
-    response.setId(accountId);
-
-    // Create device with recent containing Spotify source
-    DevicesContainerApiDto devices = new DevicesContainerApiDto();
-    List<DeviceApiDto> deviceList = new ArrayList<>();
-
-    DeviceApiDto device = new DeviceApiDto();
-    device.setDeviceid("device-456");
-
-    RecentsContainerApiDto recents = new RecentsContainerApiDto();
-    List<RecentItemApiDto> recentList = new ArrayList<>();
-
-    RecentItemApiDto recent = new RecentItemApiDto();
-    recent.setId("recent-1");
-    recent.setName("Recent Item");
-    recent.setContentItemType("tracklisturl");
-    recent.setLocation("/playback/container/456");
-    recent.setCreatedOn(OffsetDateTime.now());
-    recent.setLastplayedat(OffsetDateTime.now());
-    recent.setUpdatedOn(OffsetDateTime.now());
-    recent.setSourceid("123");
-
-    SourceApiDto recentSource = createSource("15", spotifyUserId, originalToken);
-    recent.setSource(recentSource);
-
-    recentList.add(recent);
-    recents.setRecent(recentList);
-    device.setRecents(recents);
-
-    deviceList.add(device);
-    devices.setDevice(deviceList);
-    response.setDevices(devices);
-
-    // Mock SpotifyAccountService
-    SpotifyAccount spotifyAccount =
+    var now = OffsetDateTime.now();
+    var spotifyAccountUpdatedAt = now.minusDays(2);
+    var spotifyAccount =
         new SpotifyAccount(
-            spotifyUserId,
-            "Test User",
-            newRefreshToken,
-            OffsetDateTime.now(),
-            updatedTimestamp,
-            null);
+            SPOTIFY_USER_ID, "Test User", newRefreshToken, now, spotifyAccountUpdatedAt, 1L);
     when(spotifyAccountService.listAllAccounts()).thenReturn(List.of(spotifyAccount));
 
+    var fullAccount = createFullAccountDto(accountId);
     when(accountDataService.hasAccountData(accountId)).thenReturn(true);
-    when(accountDataService.loadFullAccountData(accountId)).thenReturn(response);
+    when(accountDataService.loadFullAccountData(accountId)).thenReturn(fullAccount);
 
-    // Mock recentService to return the recent we created
-    when(recentService.getRecents(accountId)).thenReturn(List.of());
-    when(recentService.convertToApiDtos(any())).thenReturn(recentList);
+    Recent recent =
+        Recent.builder()
+            .id(1L)
+            .name("Recent Item")
+            .contentItemType("tracklisturl")
+            .location("/playback/container/456")
+            .createdOn(now)
+            .lastPlayedAt(now)
+            .updatedOn(now)
+            .sourceId(SPOTIFY_SOURCE_ID)
+            .build();
+    List<Recent> recentList = List.of(recent);
+    when(recentService.getRecents(accountId)).thenReturn(recentList);
 
     // When
     Optional<FullAccountResponseApiDto> result =
@@ -688,7 +664,32 @@ class FullAccountServiceTest {
     RecentItemApiDto resultRecent =
         result.get().getDevices().getDevice().getFirst().getRecents().getRecent().getFirst();
     assertThat(resultRecent.getSource().getCredential().getValue()).isEqualTo(newRefreshToken);
-    assertThat(resultRecent.getSource().getUpdatedOn()).isEqualTo(updatedTimestamp);
+    assertThat(resultRecent.getSource().getUpdatedOn()).isEqualTo(spotifyAccountUpdatedAt);
+  }
+
+  private static @NonNull FullAccountResponseApiDto createFullAccountDto(String accountId) {
+    String originalToken = "old-recent-token";
+
+    FullAccountResponseApiDto fullAccount = new FullAccountResponseApiDto();
+    fullAccount.setId(accountId);
+    // Create device with recent containing Spotify source
+    DevicesContainerApiDto devices = new DevicesContainerApiDto();
+    List<DeviceApiDto> deviceList = new ArrayList<>();
+
+    DeviceApiDto device = new DeviceApiDto();
+    device.setDeviceid("device-456");
+
+    RecentsContainerApiDto recents = new RecentsContainerApiDto();
+    device.setRecents(recents);
+    deviceList.add(device);
+    devices.setDevice(deviceList);
+    fullAccount.setDevices(devices);
+
+    SourceApiDto source = createSource("15", SPOTIFY_USER_ID, originalToken);
+
+    fullAccount.setSources(new SourcesContainerApiDto().addSourceItem(source));
+
+    return fullAccount;
   }
 
   @Test
@@ -737,19 +738,7 @@ class FullAccountServiceTest {
 
     // Add recent with Spotify source
     RecentsContainerApiDto recents = new RecentsContainerApiDto();
-    List<RecentItemApiDto> recentList = new ArrayList<>();
-    RecentItemApiDto recent = new RecentItemApiDto();
-    recent.setId("recent-1");
-    recent.setName("Recent");
-    recent.setContentItemType("tracklisturl");
-    recent.setLocation("/playback/container/456");
-    recent.setCreatedOn(OffsetDateTime.now());
-    recent.setLastplayedat(OffsetDateTime.now());
-    recent.setUpdatedOn(OffsetDateTime.now());
-    recent.setSourceid("123");
-    recent.setSource(createSource("15", spotifyUserId, originalToken));
-    recentList.add(recent);
-    recents.setRecent(recentList);
+    recents.setRecent(List.of());
     device.setRecents(recents);
 
     deviceList.add(device);
@@ -764,15 +753,24 @@ class FullAccountServiceTest {
             newRefreshToken,
             OffsetDateTime.now(),
             updatedTimestamp,
-            null);
+            1L);
     when(spotifyAccountService.listAllAccounts()).thenReturn(List.of(spotifyAccount));
 
     when(accountDataService.hasAccountData(accountId)).thenReturn(true);
     when(accountDataService.loadFullAccountData(accountId)).thenReturn(response);
 
-    // Mock recentService to return the recent we created
-    when(recentService.getRecents(accountId)).thenReturn(List.of());
-    when(recentService.convertToApiDtos(any())).thenReturn(recentList);
+    var recent =
+        Recent.builder()
+            .id(1L)
+            .name("Recent")
+            .contentItemType("tracklisturl")
+            .location("/playback/container/456")
+            .createdOn(OffsetDateTime.now())
+            .lastPlayedAt(OffsetDateTime.now())
+            .updatedOn(OffsetDateTime.now())
+            .sourceId(SPOTIFY_SOURCE_ID)
+            .build();
+    when(recentService.getRecents(accountId)).thenReturn(List.of(recent));
 
     // When
     Optional<FullAccountResponseApiDto> result =
@@ -828,16 +826,17 @@ class FullAccountServiceTest {
     // Given
     String accountId = "test-account-empty-devices";
 
-    FullAccountResponseApiDto response = new FullAccountResponseApiDto();
-    response.setId(accountId);
+    FullAccountResponseApiDto fullAccount = new FullAccountResponseApiDto();
+    fullAccount.setId(accountId);
 
     DevicesContainerApiDto devices = new DevicesContainerApiDto();
     devices.setDevice(new ArrayList<>());
-    response.setDevices(devices);
+    fullAccount.setDevices(devices);
+    fullAccount.setSources(new SourcesContainerApiDto());
 
     when(spotifyAccountService.listAllAccounts()).thenReturn(List.of());
     when(accountDataService.hasAccountData(accountId)).thenReturn(true);
-    when(accountDataService.loadFullAccountData(accountId)).thenReturn(response);
+    when(accountDataService.loadFullAccountData(accountId)).thenReturn(fullAccount);
 
     // When
     Optional<FullAccountResponseApiDto> result =
