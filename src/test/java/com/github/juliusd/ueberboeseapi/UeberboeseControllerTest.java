@@ -741,6 +741,87 @@ class UeberboeseControllerTest extends TestBase {
   }
 
   @Test
+  void getRecentItem_shouldReturnSingleRecent() {
+    givenRecentsInDB();
+
+    // Get all recents to extract a valid recentId
+    String recentsXml =
+        given()
+            .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+            .header("User-agent", "Bose_Lisa/27.0.6")
+            .header("Authorization", "Bearer test-token")
+            .when()
+            .get("/streaming/account/6921042/device/587A628A4042/recents")
+            .then()
+            .statusCode(200)
+            .extract()
+            .body()
+            .asString();
+
+    // Extract the first recent ID from the response
+    String recentId = recentsXml.substring(recentsXml.indexOf("id=\"") + 4);
+    recentId = recentId.substring(0, recentId.indexOf("\""));
+
+    // Now get the specific recent item
+    String actualXml =
+        given()
+            .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+            .header("User-agent", "Bose_Lisa/27.0.6")
+            .header("Authorization", "Bearer test-token")
+            .when()
+            .get("/streaming/account/6921042/device/587A628A4042/recent/" + recentId)
+            .then()
+            .statusCode(200)
+            .contentType("application/vnd.bose.streaming-v1.2+xml")
+            .extract()
+            .body()
+            .asString();
+
+    // language=XML
+    String expectedXml =
+        """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <recent id="${xmlunit.isNumber}">
+          <contentItemType>tracklisturl</contentItemType>
+          <createdOn>2025-12-13T17:14:28.000+00:00</createdOn>
+          <lastplayedat>${xmlunit.isDateTime}</lastplayedat>
+          <location>/playback/container/c3BvdGlmeTphbGJ1bTowZ3BGWVZNbVV6VkVxeVAyeUh3cEha</location>
+          <name>Ghostsitter 42 - Das Haus im Moor</name>
+          <source id="19989643" type="Audio">
+            <createdOn>${xmlunit.isDateTime}</createdOn>
+            <credential type="token_version_3">token-User1-Spot</credential>
+            <name>user1namespot</name>
+            <sourceproviderid>15</sourceproviderid>
+            <sourcename>user1@example.org</sourcename>
+            <sourceSettings/>
+            <updatedOn>${xmlunit.isDateTime}</updatedOn>
+            <username>user1namespot</username>
+          </source>
+          <sourceid>19989643</sourceid>
+          <updatedOn>${xmlunit.isDateTime}</updatedOn>
+        </recent>""";
+
+    assertThat(
+        actualXml,
+        isSimilarTo(expectedXml)
+            .ignoreWhitespace()
+            .withDifferenceEvaluator(new PlaceholderDifferenceEvaluator()));
+  }
+
+  @Test
+  void getRecentItem_shouldReturn404WhenNotFound() {
+    given()
+        .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+        .header("User-agent", "Bose_Lisa/27.0.6")
+        .header("Authorization", "Bearer test-token")
+        .when()
+        .get("/streaming/account/6921042/device/587A628A4042/recent/999999999")
+        .then()
+        .statusCode(404)
+        .contentType("application/vnd.bose.streaming-v1.2+xml");
+  }
+
+  @Test
   void powerOnSupport_shouldReturn400WhenIpAddressMissing() {
     // language=XML - Missing ip-address element
     String requestXml =

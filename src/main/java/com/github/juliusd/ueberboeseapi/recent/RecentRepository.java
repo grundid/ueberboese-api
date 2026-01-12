@@ -22,4 +22,7 @@ public interface RecentRepository extends CrudRepository<Recent, Long> {
 
   @Query("SELECT * FROM RECENT WHERE ACCOUNT_ID = :accountId ORDER BY LAST_PLAYED_AT DESC")
   List<Recent> findAllByAccountId(String accountId);
+
+  @Query("SELECT * FROM RECENT WHERE ACCOUNT_ID = :accountId AND ID = :id")
+  Optional<Recent> findByAccountIdAndId(String accountId, Long id);
 }

@@ -316,6 +316,122 @@ public class UeberboeseController implements DefaultApi {
   }
 
   @Override
+  public ResponseEntity<RecentItemResponseApiDto> getRecentItem(
+      String accountId, String deviceId, String recentId) {
+    log.info(
+        "Getting recent item for accountId: {}, deviceId: {}, recentId: {}",
+        accountId,
+        deviceId,
+        recentId);
+
+    // Parse recentId to Long
+    Long id;
+    try {
+      id = Long.parseLong(recentId);
+    } catch (NumberFormatException e) {
+      log.warn("Invalid recentId format: {}", recentId);
+      return ResponseEntity.status(404)
+          .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
+          .build();
+    }
+
+    // Fetch recent from service
+    var recentOpt = recentService.getRecentById(accountId, id);
+    if (recentOpt.isEmpty()) {
+      log.warn("Recent item not found for accountId: {}, recentId: {}", accountId, id);
+      return ResponseEntity.status(404)
+          .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
+          .build();
+    }
+
+    Recent recent = recentOpt.get();
+
+    // Load sources and find the source for this recent
+    var sources = loadSources(accountId);
+    SourceApiDto source =
+        sources.stream()
+            .filter(s -> s.getId().equals(recent.sourceId()))
+            .findFirst()
+            .orElseGet(() -> createMockSource(recent.sourceId()));
+
+    // Create the response object
+    var response =
+        new RecentItemResponseApiDto()
+            .id(String.valueOf(recent.id()))
+            .contentItemType(recent.contentItemType())
+            .createdOn(recent.createdOn())
+            .lastplayedat(recent.lastPlayedAt())
+            .location(recent.location())
+            .name(recent.name())
+            .source(source)
+            .sourceid(recent.sourceId())
+            .updatedOn(recent.updatedOn());
+
+    return ResponseEntity.ok()
+        .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        .header(
+            "Access-Control-Allow-Headers",
+            "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization")
+        .header("Access-Control-Expose-Headers", "Authorization")
+        .body(response);
+  }
+
+  private static SourceApiDto createMockSource(String sourceId) {
+    var credential = new CredentialApiDto();
+    SourceApiDto source = new SourceApiDto();
+    source.setId(sourceId);
+    source.setType("Audio");
+
+    // Set source-specific mock data based on sourceId
+    if ("19989643".equals(sourceId)) {
+      // Spotify source (user1namespot) - from test data
+      source.setCreatedOn(OffsetDateTime.parse("2018-08-11T08:55:41.000+00:00"));
+      source.setUpdatedOn(OffsetDateTime.parse("2019-07-20T17:48:31.000+00:00"));
+      credential.setType("token_version_3");
+      credential.setValue("mockTokenUser2");
+      source.setName("user1namespot");
+      source.setSourceproviderid("15");
+      source.setSourcename("user1@example.org");
+      source.setUsername("user1namespot");
+    } else if ("19989342".equals(sourceId)) {
+      // TuneIn source
+      source.setCreatedOn(OffsetDateTime.parse("2018-08-11T08:55:28.000+00:00"));
+      source.setUpdatedOn(OffsetDateTime.parse("2019-07-20T17:48:31.000+00:00"));
+      credential.setType("token");
+      credential.setValue("eyJduTune=");
+      source.setName("");
+      source.setSourceproviderid("25");
+      source.setSourcename("");
+      source.setUsername("");
+    } else if ("19989621".equals(sourceId)) {
+      // Spotify source ID from the new endpoint (mockuser789xyz)
+      source.setCreatedOn(OffsetDateTime.parse("2018-08-11T09:52:31.000+00:00"));
+      source.setUpdatedOn(OffsetDateTime.parse("2018-11-26T18:42:27.000+00:00"));
+      credential.setType("token_version_3");
+      credential.setValue("mockToken789xyz=");
+      source.setName("mockuser789xyz");
+      source.setSourceproviderid("15");
+      source.setSourcename("user@example.com");
+      source.setUsername("mockuser789xyz");
+    } else {
+      // Default source
+      source.setCreatedOn(OffsetDateTime.parse("2018-08-11T08:55:28.000+00:00"));
+      source.setUpdatedOn(OffsetDateTime.parse("2019-07-20T17:48:31.000+00:00"));
+      credential.setType("token");
+      credential.setValue("eyDu=");
+      source.setName("");
+      source.setSourceproviderid("25");
+      source.setSourcename("");
+      source.setUsername("");
+    }
+
+    source.setCredential(credential);
+    return source;
+  }
+
+  @Override
   public ResponseEntity<Void> powerOnSupport(PowerOnRequestApiDto powerOnRequestApiDto) {
     try {
       log.info("Received power_on request");

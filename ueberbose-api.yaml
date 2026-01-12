@@ -198,6 +198,65 @@ paths:
         '500':
           description: Internal server error
 
+  /streaming/account/{accountId}/device/{deviceId}/recent/{recentId}:
+    get:
+      summary: Get recent item by ID
+      description: Retrieves a specific recent item by its ID
+      operationId: getRecentItem
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/deviceId'
+        - name: recentId
+          in: path
+          required: true
+          description: Recent item identifier
+          schema:
+            type: string
+            example: "2557568761"
+      responses:
+        '200':
+          description: Successful response with recent item details
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/vnd.bose.streaming-v1.2+xml
+          content:
+            application/vnd.bose.streaming-v1.2+xml:
+              schema:
+                $ref: '#/components/schemas/RecentItemResponse'
+              example: |
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <recent id="3332">
+                  <contentItemType>tracklisturl</contentItemType>
+                  <createdOn>2025-11-08T21:07:34.000+00:00</createdOn>
+                  <lastplayedat>2025-11-08T21:15:53.000+00:00</lastplayedat>
+                  <location>/playback/container/c3BvdGlmeTp0cmFjazo0QnQ0VDRjM1c4UElrZEZuQVNLbXk5</location>
+                  <name>Zähne putzen</name>
+                  <source id="19989621" type="Audio">
+                    <createdOn>2018-08-11T09:52:31.000+00:00</createdOn>
+                    <credential type="token_version_3">mockToken789xyz=</credential>
+                    <name>mockuser789xyz</name>
+                    <sourceproviderid>15</sourceproviderid>
+                    <sourcename>user@example.com</sourcename>
+                    <sourceSettings/>
+                    <updatedOn>2018-11-26T18:42:27.000+00:00</updatedOn>
+                    <username>mockuser789xyz</username>
+                  </source>
+                  <sourceid>19989621</sourceid>
+                  <updatedOn>2025-11-08T21:15:55.000+00:00</updatedOn>
+                </recent>
+        '401':
+          description: Unauthorized - Invalid or missing Bearer token
+        '403':
+          description: Forbidden - Valid token but insufficient permissions
+        '404':
+          description: Not found - Account, device, or recent item not found
+        '500':
+          description: Internal server error
+
   /streaming/account/{accountId}/device/{deviceId}/presets:
     get:
       summary: Get device presets

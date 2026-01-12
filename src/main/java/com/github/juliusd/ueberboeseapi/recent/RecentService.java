@@ -92,4 +92,8 @@ public class RecentService {
     // Return at most 50 recents
     return allRecents.stream().limit(MAX_RECENTS_PER_ACCOUNT).toList();
   }
+
+  public Optional<Recent> getRecentById(String accountId, Long recentId) {
+    return recentRepository.findByAccountIdAndId(accountId, recentId);
+  }
 }
