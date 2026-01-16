@@ -1,3 +1,4 @@
+---
 # Site settings
 title: "Überböse API"
 description: "Keep your Bose SoundTouch devices alive"
@@ -35,7 +36,7 @@ navigation:
   - title: Quick Start
     url: /quick-start
   - title: API Documentation
-    url: /ueberboese-api-specification.html
+    url: /ueberboese-api-specification
   - title: GitHub
     url: https://github.com/julius-d/ueberboese-api
     external: true

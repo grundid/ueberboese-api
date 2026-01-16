@@ -13,7 +13,7 @@ The idea to achieve that is to reverse-engineer and rebuild the Bose streaming H
 **Full documentation is available at: https://julius-d.github.io/ueberboese-api/**
 
 - [Quick Start Guide](https://julius-d.github.io/ueberboese-api/quick-start) - Step-by-step installation and configuration
-- [Configuration Reference](https://julius-d.github.io/ueberboese-api/quick-start#configuration-reference) - Environment variables and settings
+- [Überböse Api Spec](https://julius-d.github.io/ueberboese-api/ueberboese-api-specification) - The missing api-specification. These are the endpoints your speaker calls.
 
 ## Features
 
