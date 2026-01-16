@@ -34,6 +34,8 @@ navigation:
     url: /
   - title: Quick Start
     url: /quick-start
+  - title: API Documentation
+    url: /ueberboese-api-specification.html
   - title: GitHub
     url: https://github.com/julius-d/ueberboese-api
     external: true
