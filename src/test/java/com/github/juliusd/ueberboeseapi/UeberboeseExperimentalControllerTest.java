@@ -6,6 +6,7 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.xmlunit.matchers.CompareMatcher.isSimilarTo;
 
@@ -1061,5 +1062,87 @@ class UeberboeseExperimentalControllerTest extends TestBase {
         """)
             .ignoreWhitespace()
             .withDifferenceEvaluator(new PlaceholderDifferenceEvaluator()));
+  }
+
+  @Test
+  void getPreset_shouldReturnPreset() {
+    // Given - Create a preset in the database
+    var now = OffsetDateTime.now().withNano(0);
+    Preset preset4 =
+        Preset.builder()
+            .accountId("6921042")
+            .deviceId("587A628A4042")
+            .buttonNumber(4)
+            .name("Seasonal Mix")
+            .location("/playback/container/c3BvdGlmeTpwbGF5bGlzdDoyd0JCOGIzUWhDWXd5T0d2dE9id3dI")
+            .sourceId("19989621")
+            .containerArt("https://mosaic.scdn.co/300/mockimageurl")
+            .contentItemType("tracklisturl")
+            .createdOn(OffsetDateTime.parse("2018-11-26T18:47:06.000+00:00"))
+            .updatedOn(OffsetDateTime.parse("2022-11-17T19:35:37.000+00:00"))
+            .build();
+    presetRepository.save(preset4);
+
+    // When / Then
+    String actualXml =
+        given()
+            .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+            .header("User-agent", "Bose_Lisa/27.0.6")
+            .header(
+                "Authorization",
+                "Bearer nRBCU6Iaiuu0MV498UmdWZv7Y1/qtwtEhLaERcp5C1jBxCDJjTS21UJItr2xw3RYSx808JkS9pOdUVGgP4FAPDd5wpT8MPVgmKtDjztBxRn1lCq6FH/riDIMW0OD9SyP")
+            .when()
+            .get("/streaming/account/6921042/device/587A628A4042/preset/4")
+            .then()
+            .statusCode(200)
+            .contentType("application/vnd.bose.streaming-v1.2+xml")
+            .extract()
+            .body()
+            .asString();
+
+    // language=XML
+    String expectedXml =
+        """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <preset buttonNumber="4">
+          <containerArt>https://mosaic.scdn.co/300/mockimageurl</containerArt>
+          <contentItemType>tracklisturl</contentItemType>
+          <createdOn>2018-11-26T18:47:06.000+00:00</createdOn>
+          <location>/playback/container/c3BvdGlmeTpwbGF5bGlzdDoyd0JCOGIzUWhDWXd5T0d2dE9id3dI</location>
+          <name>Seasonal Mix</name>
+          <source id="19989621" type="Audio">
+            <createdOn>2018-08-11T09:52:31.000+00:00</createdOn>
+            <credential type="token_version_3">mockToken789xyz=</credential>
+            <name>mockuser789xyz</name>
+            <sourceproviderid>15</sourceproviderid>
+            <sourcename>user@example.com</sourcename>
+            <sourceSettings/>
+            <updatedOn>2018-11-26T18:42:27.000+00:00</updatedOn>
+            <username>mockuser789xyz</username>
+          </source>
+          <updatedOn>2022-11-17T19:35:37.000+00:00</updatedOn>
+          <username>mockuser789xyz</username>
+        </preset>""";
+
+    assertThat(
+        actualXml,
+        isSimilarTo(expectedXml)
+            .ignoreWhitespace()
+            .withDifferenceEvaluator(new PlaceholderDifferenceEvaluator()));
+  }
+
+  @Test
+  void getPreset_shouldReturn404WhenNotFound() {
+    given()
+        .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+        .header("User-agent", "Bose_Lisa/27.0.6")
+        .header("Authorization", "Bearer test-token")
+        .when()
+        .get("/streaming/account/6921042/device/587A628A4042/preset/9")
+        .then()
+        .statusCode(404)
+        .contentType("application/vnd.bose.streaming-v1.2+xml")
+        .body("status.message", equalTo("Not found"))
+        .body("status.'status-code'", equalTo("404"));
   }
 }

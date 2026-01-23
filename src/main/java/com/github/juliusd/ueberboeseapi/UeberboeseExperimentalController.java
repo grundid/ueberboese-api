@@ -103,20 +103,34 @@ public class UeberboeseExperimentalController implements ExperimentalApi {
 
   private SourceApiDto createMockSource(String sourceId) {
     CredentialApiDto credential = new CredentialApiDto();
-    credential.setType("token_version_3");
-    credential.setValue("mockToken456xyz=");
-
     SourceApiDto source = new SourceApiDto();
     source.setId(sourceId);
     source.setType("Audio");
-    source.setCreatedOn(OffsetDateTime.parse("2018-08-11T09:52:31.000+00:00"));
-    source.setCredential(credential);
-    source.setName("mockuser5zt8py3wuxy123");
-    source.setSourceproviderid("15");
-    source.setSourcename("user@example.com");
-    source.setUpdatedOn(OffsetDateTime.parse("2018-11-26T18:42:27.000+00:00"));
-    source.setUsername("mockuser5zt8py3wuxy123");
 
+    // Set source-specific mock data based on sourceId
+    if ("19989621".equals(sourceId)) {
+      // Spotify source ID (mockuser789xyz)
+      source.setCreatedOn(OffsetDateTime.parse("2018-08-11T09:52:31.000+00:00"));
+      source.setUpdatedOn(OffsetDateTime.parse("2018-11-26T18:42:27.000+00:00"));
+      credential.setType("token_version_3");
+      credential.setValue("mockToken789xyz=");
+      source.setName("mockuser789xyz");
+      source.setSourceproviderid("15");
+      source.setSourcename("user@example.com");
+      source.setUsername("mockuser789xyz");
+    } else {
+      // Default source
+      source.setCreatedOn(OffsetDateTime.parse("2018-08-11T09:52:31.000+00:00"));
+      source.setUpdatedOn(OffsetDateTime.parse("2018-11-26T18:42:27.000+00:00"));
+      credential.setType("token_version_3");
+      credential.setValue("mockToken456xyz=");
+      source.setName("mockuser5zt8py3wuxy123");
+      source.setSourceproviderid("15");
+      source.setSourcename("user@example.com");
+      source.setUsername("mockuser5zt8py3wuxy123");
+    }
+
+    source.setCredential(credential);
     return source;
   }
 
@@ -228,5 +242,55 @@ public class UeberboeseExperimentalController implements ExperimentalApi {
                   .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
                   .body(errorResponse);
     }
+  }
+
+  @Override
+  public ResponseEntity<PresetUpdateResponseApiDto> getPreset(
+      String accountId, String deviceId, Integer buttonNumber) {
+
+    log.info("Getting preset {} for account {} and device {}", buttonNumber, accountId, deviceId);
+
+    // Fetch preset from service
+    var presetOpt = presetService.getPreset(accountId, deviceId, buttonNumber);
+
+    if (presetOpt.isEmpty()) {
+      log.warn(
+          "Preset not found for button {} on device {} in account {}",
+          buttonNumber,
+          deviceId,
+          accountId);
+
+      // Return 404 with ErrorResponse
+      ErrorResponseApiDto errorResponse = new ErrorResponseApiDto();
+      errorResponse.setMessage("Not found");
+      errorResponse.setStatusCode("404");
+
+      return (ResponseEntity<PresetUpdateResponseApiDto>)
+          (ResponseEntity<?>)
+              ResponseEntity.status(404)
+                  .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
+                  .body(errorResponse);
+    }
+
+    Preset preset = presetOpt.get();
+
+    // Get the source from account data (if available)
+    SourceApiDto source = getSourceFromAccount(accountId, preset.sourceId());
+
+    // Build the response
+    PresetUpdateResponseApiDto response = new PresetUpdateResponseApiDto();
+    response.setButtonNumber(preset.buttonNumber());
+    response.setContainerArt(preset.containerArt());
+    response.setContentItemType(preset.contentItemType());
+    response.setCreatedOn(preset.createdOn());
+    response.setLocation(preset.location());
+    response.setName(preset.name());
+    response.setSource(source);
+    response.setUpdatedOn(preset.updatedOn());
+    response.setUsername(source.getUsername() != null ? source.getUsername() : "");
+
+    return ResponseEntity.ok()
+        .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
+        .body(response);
   }
 }
