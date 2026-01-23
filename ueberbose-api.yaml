@@ -488,6 +488,52 @@ paths:
           description: Not found - Account or device not found
         '500':
           description: Internal server error
+    delete:
+      summary: Delete device preset
+      description: Removes the preset at the specified button number
+      operationId: deletePreset
+      tags:
+        - experimental
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/deviceId'
+        - name: buttonNumber
+          in: path
+          required: true
+          description: The preset button number (1-6)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 6
+      responses:
+        '200':
+          description: Preset deleted successfully (empty response)
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/vnd.bose.streaming-v1.2+xml
+        '401':
+          description: Unauthorized - Invalid or missing Bearer token
+        '404':
+          description: Not found - Preset not found
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/vnd.bose.streaming-v1.2+xml
+          content:
+            application/vnd.bose.streaming-v1.2+xml:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example: |
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <status>
+                  <message>Not found</message>
+                  <status-code>404</status-code>
+                </status>
 
   /streaming/account/{accountId}/full:
     get:

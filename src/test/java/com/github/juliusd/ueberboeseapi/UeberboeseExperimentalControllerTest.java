@@ -998,4 +998,68 @@ class UeberboeseExperimentalControllerTest extends TestBase {
         .statusCode(200)
         .contentType("application/vnd.bose.streaming-v1.2+xml");
   }
+
+  @Test
+  void deletePreset_shouldRemovePresetSuccessfully() {
+    // Given - Create a preset first
+    Preset preset =
+        Preset.builder()
+            .accountId("6921042")
+            .deviceId("587A628A4042")
+            .buttonNumber(1)
+            .containerArt("http://example.com/art.png")
+            .contentItemType("stationurl")
+            .location("/v1/playback/station/s12345")
+            .name("Test Station")
+            .sourceId("19989342")
+            .createdOn(OffsetDateTime.now())
+            .updatedOn(OffsetDateTime.now())
+            .build();
+    presetRepository.save(preset);
+
+    // When - Delete the preset
+    given()
+        .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+        .header("Authorization", "Bearer mockBearerTokenABC123xyz=")
+        .when()
+        .delete("/streaming/account/6921042/device/587A628A4042/preset/1")
+        .then()
+        .statusCode(200)
+        .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml");
+
+    // Then - Verify preset was deleted from database
+    Optional<Preset> deleted =
+        presetRepository.findByAccountIdAndDeviceIdAndButtonNumber("6921042", "587A628A4042", 1);
+    assertThat(deleted).isEmpty();
+  }
+
+  @Test
+  void deletePreset_shouldReturn404WhenPresetNotFound() {
+    // When - Try to delete non-existent preset
+    String actualXml =
+        given()
+            .header("Accept", "application/vnd.bose.streaming-v1.2+xml")
+            .header("Authorization", "Bearer mockBearerTokenABC123xyz=")
+            .when()
+            .delete("/streaming/account/6921042/device/587A628A4042/preset/5")
+            .then()
+            .statusCode(404)
+            .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
+            .extract()
+            .asString();
+
+    // Then - Verify error response XML
+    assertThat(
+        actualXml,
+        isSimilarTo(
+                """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <status>
+          <message>Not found</message>
+          <status-code>404</status-code>
+        </status>
+        """)
+            .ignoreWhitespace()
+            .withDifferenceEvaluator(new PlaceholderDifferenceEvaluator()));
+  }
 }

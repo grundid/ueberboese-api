@@ -7,6 +7,7 @@ import com.github.juliusd.ueberboeseapi.generated.dtos.CredentialApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.CustomerSupportRequestApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.DeviceUpdateRequestApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.DeviceUpdateResponseApiDto;
+import com.github.juliusd.ueberboeseapi.generated.dtos.ErrorResponseApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.FullAccountResponseApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.PresetUpdateRequestApiDto;
 import com.github.juliusd.ueberboeseapi.generated.dtos.PresetUpdateResponseApiDto;
@@ -201,5 +202,31 @@ public class UeberboeseExperimentalController implements ExperimentalApi {
     return ResponseEntity.ok()
         .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
         .build();
+  }
+
+  @Override
+  public ResponseEntity<Void> deletePreset(
+      String accountId, String deviceId, Integer buttonNumber) {
+    log.info("Deleting preset {} for account {} and device {}", buttonNumber, accountId, deviceId);
+
+    boolean deleted = presetService.deletePreset(accountId, deviceId, buttonNumber);
+
+    if (deleted) {
+      return ResponseEntity.ok()
+          .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
+          .build();
+    } else {
+      // Return 404 with ErrorResponse body - cast to ResponseEntity<Void> since that's what the
+      // generated interface expects
+      ErrorResponseApiDto errorResponse = new ErrorResponseApiDto();
+      errorResponse.setMessage("Not found");
+      errorResponse.setStatusCode("404");
+
+      return (ResponseEntity<Void>)
+          (ResponseEntity<?>)
+              ResponseEntity.status(404)
+                  .header("Content-Type", "application/vnd.bose.streaming-v1.2+xml")
+                  .body(errorResponse);
+    }
   }
 }

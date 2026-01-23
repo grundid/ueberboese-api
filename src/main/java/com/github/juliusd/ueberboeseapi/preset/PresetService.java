@@ -141,4 +141,29 @@ public class PresetService {
     return presetRepository.findByAccountIdAndDeviceIdAndButtonNumber(
         accountId, deviceId, buttonNumber);
   }
+
+  @Transactional
+  public boolean deletePreset(String accountId, String deviceId, Integer buttonNumber) {
+    Optional<Preset> preset =
+        presetRepository.findByAccountIdAndDeviceIdAndButtonNumber(
+            accountId, deviceId, buttonNumber);
+
+    if (preset.isPresent()) {
+      presetRepository.delete(preset.get());
+      log.info(
+          "Deleted preset id={} at button {} for account={}, device={}",
+          preset.get().id(),
+          buttonNumber,
+          accountId,
+          deviceId);
+      return true;
+    } else {
+      log.info(
+          "Preset not found at button {} for account={}, device={}",
+          buttonNumber,
+          accountId,
+          deviceId);
+      return false;
+    }
+  }
 }
