@@ -1,7 +1,15 @@
 openapi: 3.0.3
 info:
   title: Überböse Streaming API
-  description: Reverse engineered API specification
+  description: >
+    The missing API specifications for your streaming device.
+
+    This api spec combines the APIs of 4 different APIs / domains your speaker contacts.
+
+    - marge
+    - stats
+    - software-update
+    - bmx
   version: 1.2.0
 paths:
   /streaming/sourceproviders:
