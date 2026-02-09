@@ -1120,6 +1120,23 @@ paths:
       description: |
         Endpoint called by Bose SoundTouch devices to submit event data.
         Events include playback state changes, source changes, button presses, and more.
+        Every submitted event has a `type` field. Types seen in the wild include:
+        
+        - art-changed
+        - favorite-changed
+        - item-started
+        - masterdevice-changed
+        - play-item
+        - play-state-changed
+        - playpause-pressed
+        - power-pressed
+        - preset-pressed
+        - shuffle-state-changed
+        - skip-forward-pressed
+        - source-state-changed
+        - system-state-changed
+        - volume-change
+
       operationId: submitDeviceEvents
       tags:
         - events
