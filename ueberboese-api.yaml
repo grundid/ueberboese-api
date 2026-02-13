@@ -918,23 +918,42 @@ paths:
         '500':
           description: Server Error
 
-  /streaming/account/{accountId}/device/{deviceId}/group/:
-    get:
-      summary: Get device group
-      description: >
-        Unclear. Returns always an empty group.
-        What is it used for?
-      operationId: getDeviceGroup
+  /streaming/account/{accountId}/group/:
+    post:
+      summary: Create device group
+      description: Creates a new speaker group (stereo pair) with master device and roles
+      operationId: createDeviceGroup
       tags:
-        - unclear
+        - group
       security:
         - BearerAuth: []
       parameters:
         - $ref: '#/components/parameters/accountId'
-        - $ref: '#/components/parameters/deviceId'
+      requestBody:
+        required: true
+        content:
+          application/vnd.bose.streaming-v1.2+xml:
+            schema:
+              $ref: '#/components/schemas/GroupRequest'
+            example: |
+              <?xml version="1.0" encoding="UTF-8"?>
+              <group>
+                <masterDeviceId>587A628A4042</masterDeviceId>
+                <name>Living Room Stereo</name>
+                <roles>
+                  <groupRole>
+                    <deviceId>587A628A4042</deviceId>
+                    <role>LEFT</role>
+                  </groupRole>
+                  <groupRole>
+                    <deviceId>44EAD8A18888</deviceId>
+                    <role>RIGHT</role>
+                  </groupRole>
+                </roles>
+              </group>
       responses:
-        '200':
-          description: Successful response with group information
+        '201':
+          description: Group created successfully
           headers:
             Content-Type:
               schema:
@@ -945,13 +964,106 @@ paths:
               schema:
                 $ref: '#/components/schemas/GroupResponse'
               example: |
-                <?xml version="1.0" encoding="UTF-8" standalone="yes"?><group/>
+                <?xml version="1.0" encoding="UTF-8"?>
+                <group id="1225842">
+                  <masterDeviceId>587A628A4042</masterDeviceId>
+                  <name>Living Room Stereo</name>
+                  <roles>
+                    <groupRole>
+                      <deviceId>587A628A4042</deviceId>
+                      <role>LEFT</role>
+                    </groupRole>
+                    <groupRole>
+                      <deviceId>44EAD8A18888</deviceId>
+                      <role>RIGHT</role>
+                    </groupRole>
+                  </roles>
+                </group>
+        '400':
+          description: Bad request - Device already in group
+          content:
+            application/vnd.bose.streaming-v1.2+xml:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example: |
+                <?xml version="1.0" encoding="UTF-8"?>
+                <error>
+                  <status-code>4041</status-code>
+                  <message>Device 587A628A4042 already belongs to a group</message>
+                </error>
+        '401':
+          description: Unauthorized - Invalid or missing Bearer token
+        '500':
+          description: Internal server error
+
+  /streaming/account/{accountId}/device/{deviceId}/group/:
+    get:
+      summary: Get device group
+      description: |
+        Retrieves group information for a device.
+        Returns an empty group element if the device is not in a group
+      operationId: getDeviceGroup
+      tags:
+        - group
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/deviceId'
+      responses:
+        '200':
+          description: |
+            Successful response.
+            Returns full group information if device is in a group,
+            or empty group element if not.
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/vnd.bose.streaming-v1.2+xml
+          content:
+            application/vnd.bose.streaming-v1.2+xml:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+              examples:
+                deviceInGroup:
+                  summary: Device is in a group
+                  value: |
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <group id="1225842">
+                      <masterDeviceId>587A628A4042</masterDeviceId>
+                      <name>Living Room Stereo</name>
+                      <roles>
+                        <groupRole>
+                          <deviceId>587A628A4042</deviceId>
+                          <role>LEFT</role>
+                        </groupRole>
+                        <groupRole>
+                          <deviceId>44EAD8A18888</deviceId>
+                          <role>RIGHT</role>
+                        </groupRole>
+                      </roles>
+                    </group>
+                deviceNotInGroup:
+                  summary: Device is not in a group
+                  value: |
+                    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><group/>
+        '400':
+          description: Bad request - Device does not exist
+          content:
+            application/vnd.bose.streaming-v1.2+xml:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example: |
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <status>
+                  <message>Device does not exist</message>
+                  <status-code>4012</status-code>
+                </status>
         '401':
           description: Unauthorized - Invalid or missing Bearer token
         '403':
           description: Forbidden - Valid token but insufficient permissions
-        '404':
-          description: Not found - Account or device not found
         '500':
           description: Internal server error
 
@@ -2105,9 +2217,79 @@ components:
 
     GroupResponse:
       type: object
-      description: XML response containing group information (typically empty)
+      description: XML response containing group information
       xml:
         name: group
+      properties:
+        id:
+          type: string
+          description: Unique group identifier
+          xml:
+            attribute: true
+          example: "1225842"
+        masterDeviceId:
+          type: string
+          description: Device ID of the master device in the group
+          example: "587A628A4042"
+        name:
+          type: string
+          description: Name of the group
+          example: "Living Room Stereo"
+        roles:
+          $ref: '#/components/schemas/GroupRoles'
+
+    GroupRequest:
+      type: object
+      description: XML request to create a new device group
+      xml:
+        name: group
+      required:
+        - masterDeviceId
+        - name
+        - roles
+      properties:
+        masterDeviceId:
+          type: string
+          description: Device ID of the master device in the group
+          example: "587A628A4042"
+        name:
+          type: string
+          description: Name of the group
+          example: "Living Room Stereo"
+        roles:
+          $ref: '#/components/schemas/GroupRoles'
+
+    GroupRoles:
+      type: object
+      description: Container for group roles
+      xml:
+        name: roles
+      properties:
+        groupRole:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupRole'
+          xml:
+            wrapped: false
+
+    GroupRole:
+      type: object
+      description: Role assignment for a device in a group
+      xml:
+        name: groupRole
+      required:
+        - deviceId
+        - role
+      properties:
+        deviceId:
+          type: string
+          description: Device ID
+          example: "587A628A4042"
+        role:
+          type: string
+          description: Role of the device in the group
+          enum: [LEFT, RIGHT]
+          example: "LEFT"
 
     PowerOnRequest:
       type: object
