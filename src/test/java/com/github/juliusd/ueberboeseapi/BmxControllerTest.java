@@ -383,4 +383,23 @@ class BmxControllerTest extends TestBase {
         .contentType("application/json")
         .body("nextReportIn", notNullValue());
   }
+
+  @Test
+  void testGetBmxServicesAvailability() {
+    given()
+        .contentType("application/json")
+        .when()
+        .get("/bmx/registry/v1/servicesAvailability")
+        .then()
+        .statusCode(200)
+        .contentType("application/json")
+        .header("X-Bmx-Adapter-Version", equalTo("master.4.40"))
+        .body("services", hasSize(2))
+        .body("services[0].service", equalTo("TUNEIN"))
+        .body("services[0].canAdd", equalTo(true))
+        .body("services[0].canRemove", equalTo(false))
+        .body("services[1].service", equalTo("SIRIUSXM_EVEREST"))
+        .body("services[1].canAdd", equalTo(false))
+        .body("services[1].canRemove", equalTo(true));
+  }
 }

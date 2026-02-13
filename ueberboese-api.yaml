@@ -1350,6 +1350,45 @@ paths:
         '500':
           description: Internal server error
 
+  /bmx/registry/v1/servicesAvailability:
+    get:
+      summary: Get BMX services availability
+      description: |
+        Returns which streaming services can be added or removed from the user's account.
+      operationId: getBmxServicesAvailability
+      tags:
+        - bmx
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successful response with services availability
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/json
+            X-Bmx-Adapter-Version:
+              schema:
+                type: string
+                example: master.4.40
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BmxServicesAvailabilityResponse'
+              example:
+                services:
+                  - canAdd: true
+                    canRemove: false
+                    service: TUNEIN
+                  - canAdd: false
+                    canRemove: true
+                    service: SIRIUSXM_EVEREST
+        '401':
+          description: Unauthorized - Invalid or missing Bearer token
+        '500':
+          description: Internal server error
+
   /bmx/tunein/v1/playback/station/{stationId}:
     get:
       summary: Get TuneIn station playback information
@@ -2999,3 +3038,36 @@ components:
           type: integer
           description: Seconds until next report should be sent
           example: 1800
+
+    BmxServicesAvailabilityResponse:
+      type: object
+      description: Response containing services availability information
+      required:
+        - services
+      properties:
+        services:
+          type: array
+          description: List of services with their availability status
+          items:
+            $ref: '#/components/schemas/BmxServiceAvailability'
+
+    BmxServiceAvailability:
+      type: object
+      description: Availability status for a single service
+      required:
+        - canAdd
+        - canRemove
+        - service
+      properties:
+        canAdd:
+          type: boolean
+          description: Whether the service can be added to the account
+          example: true
+        canRemove:
+          type: boolean
+          description: Whether the service can be removed from the account
+          example: false
+        service:
+          type: string
+          description: Name of the service
+          example: TUNEIN
