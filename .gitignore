@@ -36,3 +36,4 @@ build/
 /logs/
 # Data directory for runtime caching
 data/
+.DS_Store
