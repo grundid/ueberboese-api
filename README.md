@@ -51,3 +51,22 @@ This will return something like
       5 https://streaming.bose.com/streaming/support/power_on
       2 https://streaming.bose.com/?serialnumber=123123AW
 ```
+
+If you did the advanced set-up, also the reported events are logged to a dedicated file.
+To look which event types got reported run
+```bash
+grep -h "event: " event-requests*.log 2>/dev/null | sed 's/.*event[^:]*: //' | jq -r '.payload.events[]?.type' | sort | uniq -c | sort -rn
+```
+This shows something like
+```
+     96 play-state-changed
+     32 item-started
+     32 art-changed
+      7 zone-state-changed
+      6 system-state-changed
+      5 volume-change
+      3 source-state-changed
+      3 play-item
+      1 preset-pressed
+      1 power-pressed
+```
