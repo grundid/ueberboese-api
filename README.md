@@ -28,6 +28,7 @@ With the Überböse Api and the
 - play presets from Spotify, TuneIn, and internet radio
 - change presets to other Spotify, TuneIn, and internet radio stations
 - create multi room zones
+- create and change stereo pairs
 
 ## Installation
 
