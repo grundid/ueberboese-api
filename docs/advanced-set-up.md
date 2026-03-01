@@ -8,8 +8,12 @@ As described [here](https://flarn2006.blogspot.com/2014/09/hacking-bose-soundtou
 and [here](https://github.com/deborahgu/soundcork)
 you can get a root shell into your speaker when you plug in a USB stick with an empty file called `remote_services`.
 
-For me, it was a bit hard to figure out how the USB stick needed to be formatted,
-so here is step-by-step guide to preparing your USB stick.
+For some people a normal, off the shelf, USB stick (probably formatted with FAT32) worked.
+But my ST-10 did not accept that. I needed an EXT2 formatted USB stick with a master boot record.
+
+I suggest that you first simply try out the USB stick as it is.
+
+If that does not work, you can follow this step-by-step guide to preparing a EXT2 USB stick: 
 
 ## Guide: Creating an EXT2 "Unlock" USB Stick
 
@@ -189,4 +193,28 @@ vi OverrideSdkPrivateCfg.xml
 And then restart the speaker via
 ```shell
 reboot
+```
+
+## Advanced setup without `envswitch`
+
+If you did **not** follow the guide step by step and did _not_ execute `envswitch boseurls set <...>`
+before you reached here, that is totally fine.
+When you do the advanced set-up, the `envswitch` is not needed at all.
+But that changes things a little bit.
+
+1. The file `/var/lib/Bose/PersistenceDataRoot/OverrideSdkPrivateCfg.xml` was not created.
+   You have to edit the file `/opt/Bose/etc/SoundTouchSdkPrivateCfg.xml` 
+2. Of course the content of that file was not changed to use the url of you Überböse API server, 
+   So `cat`ing will print something like
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<SoundTouchSdkPrivateCfg>
+  <margeServerUrl>https://streaming.bose.com</margeServerUrl>
+  <statsServerUrl>https://events.api.bosecm.com</statsServerUrl>
+  <swUpdateUrl>https://worldwide.bose.com/updates/soundtouch</swUpdateUrl>
+  <usePandoraProductionServer>true</usePandoraProductionServer>
+  <isZeroconfEnabled>true</isZeroconfEnabled>
+  <saveMargeCustomerReport>false</saveMargeCustomerReport>
+  <bmxRegistryUrl>https://content.api.bose.io/bmx/registry/v1/services</bmxRegistryUrl>
+</SoundTouchSdkPrivateCfg>
 ```
