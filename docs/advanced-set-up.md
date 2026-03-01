@@ -13,7 +13,7 @@ But my ST-10 did not accept that. I needed an EXT2 formatted USB stick with a ma
 
 I suggest that you first simply try out the USB stick as it is.
 
-If that does not work, you can follow this step-by-step guide to preparing a EXT2 USB stick: 
+If that does not work, you can follow this step-by-step guide to preparing a EXT2 USB stick:
 
 ## Guide: Creating an EXT2 "Unlock" USB Stick
 
@@ -203,8 +203,8 @@ When you do the advanced set-up, the `envswitch` is not needed at all.
 But that changes things a little bit.
 
 1. The file `/var/lib/Bose/PersistenceDataRoot/OverrideSdkPrivateCfg.xml` was not created.
-   You have to edit the file `/opt/Bose/etc/SoundTouchSdkPrivateCfg.xml` 
-2. Of course the content of that file was not changed to use the url of you Überböse API server, 
+   You have to edit the file `/opt/Bose/etc/SoundTouchSdkPrivateCfg.xml`
+2. Of course the content of that file was not changed to use the url of you Überböse API server,
    So `cat`ing will print something like
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
