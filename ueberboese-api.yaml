@@ -423,8 +423,6 @@ paths:
       summary: Update device preset
       description: Updates or creates a preset for a specific button number on the device
       operationId: updatePreset
-      tags:
-        - experimental
       security:
         - BearerAuth: []
       parameters:
@@ -500,8 +498,6 @@ paths:
       summary: Delete device preset
       description: Removes the preset at the specified button number
       operationId: deletePreset
-      tags:
-        - experimental
       security:
         - BearerAuth: []
       parameters:
@@ -546,8 +542,6 @@ paths:
       summary: Get device preset
       description: Retrieves a preset for a specific button number on the device
       operationId: getPreset
-      tags:
-        - experimental
       security:
         - BearerAuth: []
       parameters:
@@ -647,8 +641,6 @@ paths:
       summary: Update device information
       description: Updates device name and metadata
       operationId: updateDevice
-      tags:
-        - experimental
       security:
         - BearerAuth: []
       parameters:
@@ -759,7 +751,7 @@ paths:
         '401':
           description: Unauthorized - Invalid or missing Bearer token
 
-  /streaming/account/{accountId}/device:
+  /streaming/account/{accountId}/device/:
     post:
       summary: Register device to account
       description: |
@@ -1311,8 +1303,6 @@ paths:
         Reports device information, firmware version, product details, and network diagnostic data.
         I believe the call is triggered when opening CS pages in the Bose Soundtuch app.
       operationId: customerSupport
-      tags:
-        - experimental
       security:
         - BearerAuth: []
       requestBody:
@@ -1369,6 +1359,24 @@ paths:
         '500':
           description: Internal server error
 
+  /v1/blacklist/{deviceId}:
+    get:
+      summary: Get device blacklist status
+      description: >
+        Checks if a device is blacklisted.
+        Seems to always returns 404.
+        This endpoint is called by some devices during startup.
+        Maybe this are devices that have an old firmware or that were
+        associated to a different accountId before.
+      operationId: getDeviceBlacklist
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/deviceId'
+      responses:
+        '404':
+          description: Device not found in blacklist (expected response)
+
   /v1/scmudc/{deviceId}:
     post:
       summary: Submit device events
@@ -1378,19 +1386,319 @@ paths:
         Every submitted event has a `type` field. Types seen in the wild include:
 
         - art-changed
+        - aux-pressed
+        - balance-changed
+        - bass-changed
+        - clock-changed
+        - dislike-pressed
         - favorite-changed
         - item-started
+        - language-changed
+        - like-pressed
         - masterdevice-changed
+        - pause-pressed
         - play-item
         - play-state-changed
         - playpause-pressed
         - power-pressed
+        - preset-assigned
         - preset-pressed
+        - presets-changed
         - shuffle-state-changed
         - skip-forward-pressed
         - source-state-changed
+        - stop-pressed
         - system-state-changed
         - volume-change
+        - zone-state-changed
+
+        The following examples show the `data` shape for each event type
+        (only the varying `events` entry is shown; `envelope` and `payload.deviceInfo`
+        are structurally identical across all events — see the schema for their full structure).
+        Also leaving out the `monoTime` and `time` field. As every event has them.
+
+        **art-changed**
+        ```json
+        { "type": "art-changed", "data": { "art-status": "SHOW_DEFAULT_IMAGE", "art-uri": "" } }
+        { "type": "art-changed", "data": { "art-status": "IMAGE_PRESENT", "art-uri": "https://example.com/art.jpg" } }
+        { "type": "art-changed", "data": { "art-status": "", "art-uri": "" } }
+        ```
+
+        **aux-pressed**
+        ```json
+        { "type": "aux-pressed", "data": { "buttonId": "AUX_INPUT", "origin": "ir-remote" } }
+        ```
+
+        **balance-changed**
+        ```json
+        { "type": "balance-changed",
+          "data": { "balance": 0 } }
+        ```
+
+        **bass-changed**
+        ```json
+        { "type": "bass-changed", "data": { "bass": -1 } }
+        ```
+
+        **clock-changed**
+        ```json
+        { "type": "clock-changed",
+          "data": { "brightness": 100, "enabled": "true", "timeformat": 24, "timezone": "Europe/Berlin", "useroffset": 0, "usertime": 0 } }
+        { "type": "clock-changed",
+          "data": { "brightness": 70, "enabled": "true", "timeformat": 12, "timezone": "", "useroffset": 0, "usertime": 0 } }
+        ```
+
+        **dislike-pressed**
+        ```json
+        { "type": "dislike-pressed", "data": { "buttonId": "THUMBS_DOWN", "origin": "ir-remote" } }
+        ```
+
+        **favorite-changed**
+        ```json
+        { "type": "favorite-changed", "data": { "favorite-value": "true" } }
+        { "type": "favorite-changed", "data": { "favorite-value": "false" } }
+        ```
+
+        **item-started**
+
+        Spotify track playing:
+        ```json
+        { "type": "item-started",
+          "data": {
+            "play-state": "PLAY_STATE", "repeat-state": "REPEAT_OFF", "shuffle-state": "SHUFFLE_OFF",
+            "contentItem": "<base64-encoded-ContentItem-xml>",
+            "nowPlaying": {
+              "source": "SPOTIFY", "sourceAccount": "SpotifyConnectUserName",
+              "playStatus": "PLAY_STATE", "deviceID": "DEVICE_A",
+              "track": { "text": "Kapitel 20: Abenteuer Afrika - Folge 96" },
+              "trackID": "spotify:track:XXXXXXXXXXXXXXXXXXXXXXXX",
+              "album": { "text": "Folge 96: Abenteuer Afrika" },
+              "artist": { "text": "Die drei !!!" },
+              "art": { "artImageStatus": "IMAGE_PRESENT", "text": "https://example.com/art.jpg" },
+              "streamTypeField": { "text": "TRACK_ONDEMAND" },
+              "time": { "text": "2", "total": "287" },
+              "repeatSetting": { "text": "REPEAT_OFF" }, "shuffleSetting": { "text": "SHUFFLE_OFF" },
+              "contentItem": { "source": "SPOTIFY", "type": "DO_NOT_RESUME", "isPresetable": "false",
+                "location": "/playback/container/XXXXXXXXXXXXXXXXXXXXXXXX",
+                "itemName": { "text": "Folge 96: Abenteuer Afrika" } }
+            }
+          }
+        }
+        ```
+
+        Spotify playlist, buffering:
+        ```json
+        { "type": "item-started",
+          "data": {
+            "play-state": "BUFFERING_STATE", "repeat-state": "REPEAT_OFF", "shuffle-state": "SHUFFLE_ON",
+            "contentItem": "<base64-encoded-ContentItem-xml>",
+            "nowPlaying": {
+              "source": "SPOTIFY", "sourceAccount": "spotifyUser123",
+              "playStatus": "BUFFERING_STATE", "deviceID": "DEVICE_A",
+              "track": { "text": "Take My Breath" }, "trackID": "spotify:track:XXXXXXXXXXXXXXXXXXXXXXXX",
+              "album": { "text": "Dawn FM" }, "artist": { "text": "The Weeknd" },
+              "art": { "artImageStatus": "IMAGE_PRESENT", "text": "https://example.com/art.jpg" },
+              "streamTypeField": { "text": "TRACK_ONDEMAND" },
+              "time": { "text": "0", "total": "339" },
+              "repeatSetting": { "text": "REPEAT_OFF" }, "shuffleSetting": { "text": "SHUFFLE_ON" },
+              "contentItem": { "source": "SPOTIFY", "type": "tracklisturl", "isPresetable": "true",
+                "location": "/playback/container/XXXXXXXXXXXXXXXXXXXXXXXX",
+                "itemName": { "text": "My Playlist" } }
+            }
+          }
+        }
+        ```
+
+        Spotify podcast, paused:
+        ```json
+        { "type": "item-started",
+          "data": {
+            "play-state": "PAUSE_STATE", "repeat-state": "REPEAT_OFF", "shuffle-state": "SHUFFLE_OFF",
+            "contentItem": "<base64-encoded-ContentItem-xml>",
+            "nowPlaying": {
+              "source": "SPOTIFY", "sourceAccount": "SpotifyConnectUserName",
+              "playStatus": "PAUSE_STATE", "deviceID": "DEVICE_A",
+              "track": { "text": "Episode Title" }, "trackID": "spotify:episode:XXXXXXXXXXXXXXXXXXXXXXXX",
+              "album": { "text": "My Podcast" }, "artist": { "text": "Podcast Author" },
+              "art": { "artImageStatus": "IMAGE_PRESENT", "text": "https://example.com/art.jpg" },
+              "streamTypeField": { "text": "RADIO_STREAMING" },
+              "time": { "text": "118", "total": "2514" },
+              "repeatSetting": { "text": "REPEAT_OFF" }, "shuffleSetting": { "text": "SHUFFLE_OFF" },
+              "contentItem": { "source": "SPOTIFY", "type": "DO_NOT_RESUME", "isPresetable": "false",
+                "location": "/playback/container/XXXXXXXXXXXXXXXXXXXXXXXX",
+                "itemName": { "text": "My Podcast" } }
+            }
+          }
+        }
+        ```
+
+        Bluetooth connecting:
+        ```json
+        { "type": "item-started",
+          "data": {
+            "play-state": "INVALID_PLAY_STATUS", "repeat-state": "", "shuffle-state": "",
+            "contentItem": "<base64-encoded-ContentItem-xml>",
+            "nowPlaying": {
+              "source": "BLUETOOTH", "sourceAccount": "",
+              "playStatus": "INVALID_PLAY_STATUS", "deviceID": "DEVICE_B",
+              "connectionStatusInfo": { "deviceName": "My Phone", "status": "CONNECTING" },
+              "art": { "artImageStatus": "SHOW_DEFAULT_IMAGE", "text": "" },
+              "contentItem": { "source": "BLUETOOTH", "type": "", "isPresetable": "false",
+                "location": "", "itemName": { "text": "" } }
+            }
+          }
+        }
+        ```
+
+        Unplayable item (STOP_STATE):
+        ```json
+        { "type": "item-started",
+          "data": {
+            "play-state": "STOP_STATE", "repeat-state": "", "shuffle-state": "",
+            "contentItem": "<base64-encoded-ContentItem-xml>",
+            "nowPlaying": {
+              "source": "SPOTIFY", "sourceAccount": "SpotifyConnectUserName",
+              "playStatus": "STOP_STATE", "deviceID": "DEVICE_A",
+              "art": { "artImageStatus": "SHOW_DEFAULT_IMAGE", "text": "" },
+              "contentItem": { "source": "SPOTIFY", "type": "DO_NOT_RESUME", "isPresetable": "false",
+                "location": "Unplayable location string", "itemName": { "text": "" } }
+            }
+          }
+        }
+        ```
+
+        **language-changed**
+        ```json
+        { "type": "language-changed",
+          "data": { "language": "DISPLAY_LANGUAGE_GERMAN" } }
+        ```
+
+        **like-pressed**
+        ```json
+        { "type": "like-pressed", "data": { "buttonId": "THUMBS_UP", "origin": "ir-remote" } }
+        ```
+
+        **masterdevice-changed**
+        ```json
+        { "type": "masterdevice-changed", "data": { "masterDeviceId": "DEVICE_A" } }
+        ```
+
+        **pause-pressed**
+        ```json
+        { "type": "pause-pressed", "data": { "buttonId": "PAUSE", "origin": "gabbo" } }
+        ```
+
+        **play-item**
+        ```json
+        { "type": "play-item",
+          "data": { "origin": "device", "preset": "none", "contentItem": "<base64-encoded-ContentItem-xml>" } }
+        ```
+
+        **play-state-changed**
+        ```json
+        { "type": "play-state-changed", "data": { "play-state": "BUFFERING_STATE" } }
+        { "type": "play-state-changed", "data": { "play-state": "PLAY_STATE" } }
+        { "type": "play-state-changed", "data": { "play-state": "PAUSE_STATE" } }
+        { "type": "play-state-changed", "data": { "play-state": "STOP_STATE" } }
+        { "type": "play-state-changed", "data": { "play-state": "INVALID_PLAY_STATUS" } }
+        ```
+
+        **playpause-pressed**
+        ```json
+        { "type": "playpause-pressed",
+          "data": { "buttonId": "PLAY_PAUSE", "origin": "ir-remote" } }
+        ```
+
+        **power-pressed**
+        ```json
+        { "type": "power-pressed", "data": { "buttonId": "POWER", "origin": "console" } }
+        { "type": "power-pressed", "data": { "buttonId": "POWER", "origin": "ir-remote" } }
+        ```
+
+        **preset-assigned**
+        ```json
+        { "type": "preset-assigned",
+          "data": { "preset": "P1", "origin": "device", "contentItem": "<base64-encoded-ContentItem-xml>" } }
+        ```
+
+        **preset-pressed**
+        ```json
+        { "type": "preset-pressed", "data": { "buttonId": "PRESET_1", "origin": "ir-remote" } }
+        { "type": "preset-pressed", "data": { "buttonId": "PRESET_6", "origin": "console" } }
+        ```
+
+        **presets-changed**
+        ```json
+        { "type": "presets-changed",
+          "data": {
+            "presets": [
+              { "id": "P1", "name": "Preset 1 Name", "contentItem": "<base64-encoded-ContentItem-xml>" },
+              { "id": "P2", "name": "Preset 2 Name", "contentItem": "<base64-encoded-ContentItem-xml>" },
+              { "id": "P3", "name": "Preset 3 Name", "contentItem": "<base64-encoded-ContentItem-xml>" },
+              { "id": "P4", "name": "Preset 4 Name", "contentItem": "<base64-encoded-ContentItem-xml>" },
+              { "id": "P5", "name": "Preset 5 Name", "contentItem": "<base64-encoded-ContentItem-xml>" },
+              { "id": "P6", "name": "Preset 6 Name", "contentItem": "<base64-encoded-ContentItem-xml>" }
+            ]
+          }
+        }
+        ```
+
+        **shuffle-state-changed**
+        ```json
+        { "type": "shuffle-state-changed", "data": { "shuffle-state": "SHUFFLE_ON" } }
+        { "type": "shuffle-state-changed", "data": { "shuffle-state": "SHUFFLE_OFF" } }
+        ```
+
+        **skip-forward-pressed**
+        ```json
+        { "type": "skip-forward-pressed", "data": { "buttonId": "NEXT_TRACK", "origin": "ir-remote" } }
+        ```
+
+        **source-state-changed**
+        ```json
+        { "type": "source-state-changed", "data": { "source-state": "SPOTIFY" } }
+        { "type": "source-state-changed", "data": { "source-state": "TUNEIN" } }
+        { "type": "source-state-changed", "data": { "source-state": "BLUETOOTH" } }
+        { "type": "source-state-changed", "data": { "source-state": "AUX" } }
+        { "type": "source-state-changed", "data": { "source-state": "INVALID_SOURCE" } }
+        ```
+
+        **stop-pressed**
+        ```json
+        { "type": "stop-pressed", "data": { "buttonId": "STOP", "origin": "gabbo" } }
+        ```
+
+        **system-state-changed**
+        ```json
+        { "type": "system-state-changed",
+          "data": { "system-state": "Standby",
+            "nowPlaying": { "source": "INVALID_SOURCE", "contentItem": { "source": "INVALID_SOURCE" } } } }
+        { "type": "system-state-changed",
+          "data": { "system-state": "On",
+            "nowPlaying": { "source": "SPOTIFY", "sourceAccount": "spotifyUser123",
+              "playStatus": "BUFFERING_STATE", "deviceID": "DEVICE_A",
+              "contentItem": { "source": "INVALID_SOURCE" } } } }
+        ```
+
+        **volume-change**
+        ```json
+        { "type": "volume-change",
+          "data": { "startTime": "2026-02-22T19:02:56.852408+00:00", "volume-change": [30] } }
+        { "type": "volume-change",
+          "data": { "startTime": "2026-03-12T19:22:18.861558+00:00", "volume-change": [33, 32, 31, 30, 29, 28, 27, 26, 25, 24] } }
+        ```
+
+        **zone-state-changed**
+        ```json
+        { "type": "zone-state-changed",
+          "data": { "masterDeviceId": "DEVICE_A",
+            "roles": [
+              { "deviceId": "DEVICE_A", "role": "MASTER" },
+              { "deviceId": "DEVICE_B", "role": "SLAVE" },
+              { "deviceId": "DEVICE_C", "role": "SLAVE" }
+            ] } }
+        { "type": "zone-state-changed", "data": { "masterDeviceId": "", "roles": [] } }
+        ```
 
       operationId: submitDeviceEvents
       tags:
@@ -1411,28 +1719,6 @@ paths:
           text/json:
             schema:
               $ref: '#/components/schemas/DeviceEventsRequest'
-            example:
-              envelope:
-                monoTime: 94118263
-                payloadProtocolVersion: "3.1"
-                payloadType: "scmudc"
-                protocolVersion: "1.0"
-                time: "2026-01-09T08:02:32.874426+00:00"
-                uniqueId: "587A628A4042"
-              payload:
-                deviceInfo:
-                  boseID: "6921042"
-                  deviceID: "587A628A4042"
-                  deviceType: "SoundTouch 20"
-                  serialNumber: "P123456789101123456789"
-                  softwareVersion: "27.0.6.46330.5043500 epdbuild.trunk.hepdswbld04.2022-08-04T11:20:29"
-                  systemSerialNumber: "069236P81556160AE"
-                events:
-                  - data:
-                      source-state: "SPOTIFY"
-                    monoTime: 94118263
-                    time: "2026-01-09T08:02:32.873379+00:00"
-                    type: "source-state-changed"
       responses:
         '200':
           description: Successfully received device events
@@ -1990,6 +2276,50 @@ components:
           description: Space-separated list of granted scopes
           example: "playlist-read-private playlist-read-collaborative streaming user-library-read user-library-modify playlist-modify-private playlist-modify-public user-read-email user-read-private user-top-read"
     
+    ProviderSetting:
+      type: object
+      description: Provider-specific settings
+      xml:
+        name: providerSetting
+      properties:
+        boseId:
+          type: integer
+          description: Bose account identifier associated with the provider settings
+          xml:
+            attribute: true
+          example: 6921042
+        keyName:
+          type: string
+          description: Name of the provider setting key
+          xml:
+            attribute: true
+          example: "exampleKey"
+        value:
+          type: boolean
+          description: Value of the provider setting
+          xml:
+            attribute: true
+          example: true
+        providerId:
+          type: integer
+          description: Identifier of the provider associated with the settings
+          xml:
+            attribute: true
+          example: 15
+
+    ProviderSettingsContainer:
+      type: object
+      description: Container for provider settings
+      xml:
+        name: providerSettings
+      properties:
+        providerSetting:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderSetting'
+          xml:
+            wrapped: false
+
     ProviderSetting:
       type: object
       description: Provider-specific settings

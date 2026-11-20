@@ -28,6 +28,7 @@ With the Überböse Api and the
 - play presets from Spotify, TuneIn, and internet radio
 - change presets to other Spotify, TuneIn, and internet radio stations
 - create multi room zones
+- create and change stereo pairs
 
 ## Installation
 
@@ -49,4 +50,39 @@ This will return something like
       9 https://streaming.bose.com/streaming/account/6921042/device/587A628A4042/recents
       5 https://streaming.bose.com/streaming/support/power_on
       2 https://streaming.bose.com/?serialnumber=123123AW
+```
+
+If you did the advanced set-up, also the reported events are logged to a dedicated file.
+To look which event types got reported run
+```bash
+grep -h "event: " event-requests*.log 2>/dev/null | sed 's/.*event[^:]*: //' | jq -r '.payload.events[]?.type' | sort | uniq -c | sort -rn
+```
+This shows something like
+```
+   4479 play-state-changed
+   1396 item-started
+   1168 art-changed
+    296 system-state-changed
+    201 source-state-changed
+    151 volume-change
+    129 play-item
+     87 presets-changed
+     58 balance-changed
+     49 preset-pressed
+     47 zone-state-changed
+     34 favorite-changed
+     32 language-changed
+     29 shuffle-state-changed
+     26 power-pressed
+     17 masterdevice-changed
+     11 playpause-pressed
+      6 aux-pressed
+      3 stop-pressed
+      3 clock-changed
+      2 preset-assigned
+      1 skip-forward-pressed
+      1 pause-pressed
+      1 like-pressed
+      1 dislike-pressed
+      1 bass-changed
 ```

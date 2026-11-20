@@ -1,5 +1,7 @@
 package com.github.juliusd.ueberboeseapi.filter;
 
+import static org.slf4j.LoggerFactory.getLogger;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,6 +10,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
@@ -21,6 +24,8 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
 @Component
 @Slf4j
 public class RequestLoggingFilter extends OncePerRequestFilter {
+
+  private static final Logger EVENT_LOG = getLogger("com.github.juliusd.ueberboeseapi.EventLog");
 
   @Override
   protected void doFilterInternal(
@@ -36,7 +41,8 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     log.info("Request: {} {}", request.getMethod(), fullUri);
 
     // Only wrap and log for event endpoints
-    if (request.getRequestURI().matches(".*/v1/scmudc/.*")) {
+    boolean isEventReport = request.getRequestURI().matches(".*/v1/scmudc/.*");
+    if (isEventReport || request.getRequestURI().matches(".*/bmx/.+/v1/report.*")) {
       // Wrap request with content size limit of 1MB
       ContentCachingRequestWrapper wrappedRequest =
           new ContentCachingRequestWrapper(request, 1024 * 1024);
@@ -48,7 +54,8 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
       byte[] content = wrappedRequest.getContentAsByteArray();
       if (content.length > 0) {
         String rawBody = new String(content, StandardCharsets.UTF_8);
-        log.info("Raw request body for {}: {}", request.getRequestURI(), rawBody.trim());
+        String type = isEventReport ? "event" : "bxm-report";
+        EVENT_LOG.info("{}: {}", type, rawBody.trim());
       }
     } else {
       // For non-event endpoints, proceed normally without wrapping
